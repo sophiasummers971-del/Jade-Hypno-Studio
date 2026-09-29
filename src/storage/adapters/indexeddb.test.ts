@@ -4,6 +4,7 @@ import { IndexedDBRepository } from './indexeddb';
 import { defaultSettings, newSession } from '../../domain/schema';
 import { duplicateSession } from '../repository';
 import { Autosave } from '../autosave';
+import { newExperimentRecord } from '../../experiment/model';
 const setup = () => {
   const factory = new IDBFactory();
   const name = 'test-studio';
@@ -16,7 +17,7 @@ async function raw(
   operation: (store: IDBObjectStore) => IDBRequest,
 ) {
   const db = await new Promise<IDBDatabase>((resolve, reject) => {
-    const request = factory.open(name, 1);
+    const request = factory.open(name, 2);
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
@@ -88,6 +89,35 @@ describe('IndexedDB transaction adapter', () => {
       await raw(factory, name, 'trash', (store) => store.get(original.id)),
     ).toBeUndefined();
     await repo.close();
+  });
+  it('persists, edits, filters and deletes experiment observations independently of session deletion', async () => {
+    const { repo, factory, name } = setup();
+    const session = await repo.save(newSession('Repeated run', defaultSettings), null);
+    const first = newExperimentRecord({
+      sessionId: session.id,
+      sessionTitle: session.title,
+      sessionRevision: session.updatedAt,
+      completedAt: new Date().toISOString(),
+      durationSeconds: 120,
+    });
+    const saved = await repo.saveExperiment(first, null);
+    await repo.close();
+    const reopened = new IndexedDBRepository({ factory, name });
+    expect(await reopened.listExperiments(session.id)).toEqual([saved]);
+    const edited = await reopened.saveExperiment(
+      { ...saved, notes: 'A local note', ratings: { ...saved.ratings, comfort: 4 } },
+      saved.updatedAt,
+    );
+    await reopened.trash(session.id, session.updatedAt);
+    expect((await reopened.listExperiments())[0]).toMatchObject({
+      id: edited.id,
+      sessionId: session.id,
+      sessionTitle: 'Repeated run',
+      notes: 'A local note',
+    });
+    await reopened.deleteExperiment(edited.id, edited.updatedAt);
+    expect(await reopened.listExperiments()).toEqual([]);
+    await reopened.close();
   });
   it('persists settings across connection restart', async () => {
     const { repo, factory, name } = setup();
