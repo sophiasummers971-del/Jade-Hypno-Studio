@@ -35,6 +35,8 @@ jobs:
         run: |
           npm run schema:generate
           if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add src-tauri/schemas
             git commit -m "M4: regenerate JSON schemas"
             git push origin HEAD:codex/milestone-4-audio-engine
