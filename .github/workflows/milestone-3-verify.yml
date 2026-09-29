@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify:
@@ -19,6 +19,16 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
+      - name: Refresh generated schemas
+        run: |
+          npm run schema:generate
+          if ! git diff --quiet -- src-tauri/schemas; then
+            git config user.name "jade-hypno-studio-ci"
+            git config user.email "actions@users.noreply.github.com"
+            git add src-tauri/schemas
+            git commit -m "Regenerate schemas for Milestone 3"
+            git push origin HEAD:codex/milestone-3-safety-review
+          fi
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
