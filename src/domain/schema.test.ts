@@ -63,6 +63,7 @@ describe('versioned session schema', () => {
     delete legacy.sourceImports;
     const audio = legacy.audioSettings as Record<string, unknown>;
     for (const key of [
+      'narrationReference',
       'musicReference',
       'ambientReference',
       'fadeInDuration',
@@ -82,6 +83,7 @@ describe('versioned session schema', () => {
       delete visual[key];
     const parsed = SessionSchema.parse(legacy);
     expect(parsed.sourceImports).toEqual([]);
+    expect(parsed.audioSettings.narrationReference).toBe('');
     expect(parsed.audioSettings.musicReference).toBe('');
     expect(parsed.visualSettings.backgroundType).toBe('color');
   });
