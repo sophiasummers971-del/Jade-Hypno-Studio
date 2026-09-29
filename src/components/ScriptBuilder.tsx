@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   backgroundTypes,
   blockTypes,
@@ -46,10 +46,12 @@ export function ScriptBuilder({
   session,
   wordsPerMinute,
   onChange,
+  focusBlockId,
 }: {
   session: Session;
   wordsPerMinute: number;
   onChange: (session: Session) => void;
+  focusBlockId?: string;
 }) {
   const [activeId, setActiveId] = useState(session.blocks[0]?.id ?? '');
   const [importDraft, setImportDraft] = useState<ImportedTextDraft | null>(
@@ -61,6 +63,15 @@ export function ScriptBuilder({
     () => timelineForSession(session, wordsPerMinute),
     [session, wordsPerMinute],
   );
+  useEffect(() => {
+    if (
+      focusBlockId &&
+      session.blocks.some((block) => block.id === focusBlockId)
+    ) {
+      setActiveId(focusBlockId);
+    }
+  }, [focusBlockId, session.blocks]);
+
   const active =
     session.blocks.find((block) => block.id === activeId) ??
     session.blocks[0] ??
