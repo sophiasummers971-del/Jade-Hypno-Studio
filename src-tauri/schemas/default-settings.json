@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "defaultSessionDuration": 20,
+  "defaultVoiceId": "",
+  "defaultOutputResolution": "1920x1080",
+  "defaultExportDirectory": "",
+  "captionsEnabled": true,
+  "defaultNarrationLevel": 0.8,
+  "defaultMusicLevel": 0.3,
+  "defaultAmbientLevel": 0.2
+}

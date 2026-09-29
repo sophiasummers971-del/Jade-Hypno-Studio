@@ -1,0 +1,347 @@
+{
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200,
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 10000
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "standard",
+        "custom"
+      ]
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "durationEstimate": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 86400
+    },
+    "blocks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "preflight",
+              "arrival",
+              "attention",
+              "settling",
+              "deepening",
+              "main",
+              "intensification",
+              "release",
+              "return",
+              "exit",
+              "custom"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "narration": {
+            "type": "string",
+            "maxLength": 100000
+          },
+          "estimatedDuration": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 86400
+          },
+          "voiceSettings": {
+            "type": "object",
+            "properties": {
+              "voiceId": {
+                "type": "string",
+                "maxLength": 256
+              },
+              "rate": {
+                "type": "number",
+                "minimum": 0.5,
+                "maximum": 2
+              },
+              "pitch": {
+                "type": "number",
+                "minimum": -12,
+                "maximum": 12
+              }
+            },
+            "required": [
+              "voiceId",
+              "rate",
+              "pitch"
+            ],
+            "additionalProperties": false
+          },
+          "visualSettings": {
+            "type": "object",
+            "properties": {
+              "resolution": {
+                "type": "string",
+                "enum": [
+                  "1280x720",
+                  "1920x1080",
+                  "3840x2160"
+                ]
+              },
+              "backgroundColor": {
+                "type": "string",
+                "pattern": "^#[0-9a-fA-F]{6}$"
+              }
+            },
+            "required": [
+              "resolution",
+              "backgroundColor"
+            ],
+            "additionalProperties": false
+          },
+          "audioSettings": {
+            "type": "object",
+            "properties": {
+              "narrationLevel": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "musicLevel": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "ambientLevel": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "narrationLevel",
+              "musicLevel",
+              "ambientLevel"
+            ],
+            "additionalProperties": false
+          },
+          "captionSettings": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "enabled"
+            ],
+            "additionalProperties": false
+          },
+          "transitionSettings": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "fade"
+                ]
+              },
+              "duration": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 30
+              }
+            },
+            "required": [
+              "type",
+              "duration"
+            ],
+            "additionalProperties": false
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 10000
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "title",
+          "enabled",
+          "narration",
+          "estimatedDuration",
+          "voiceSettings",
+          "visualSettings",
+          "audioSettings",
+          "captionSettings",
+          "transitionSettings",
+          "notes"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 200
+    },
+    "audioSettings": {
+      "type": "object",
+      "properties": {
+        "narrationLevel": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "musicLevel": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "ambientLevel": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "required": [
+        "narrationLevel",
+        "musicLevel",
+        "ambientLevel"
+      ],
+      "additionalProperties": false
+    },
+    "visualSettings": {
+      "type": "object",
+      "properties": {
+        "resolution": {
+          "type": "string",
+          "enum": [
+            "1280x720",
+            "1920x1080",
+            "3840x2160"
+          ]
+        },
+        "backgroundColor": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        }
+      },
+      "required": [
+        "resolution",
+        "backgroundColor"
+      ],
+      "additionalProperties": false
+    },
+    "safetyReview": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "not-reviewed",
+            "reviewed"
+          ]
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 10000
+        }
+      },
+      "required": [
+        "status",
+        "notes"
+      ],
+      "additionalProperties": false
+    },
+    "exportSettings": {
+      "type": "object",
+      "properties": {
+        "directory": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "resolution": {
+          "type": "string",
+          "enum": [
+            "1280x720",
+            "1920x1080",
+            "3840x2160"
+          ]
+        },
+        "captionsEnabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "directory",
+        "resolution",
+        "captionsEnabled"
+      ],
+      "additionalProperties": false
+    },
+    "experimentMetadata": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 10000
+        }
+      },
+      "required": [
+        "label",
+        "notes"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "id",
+    "title",
+    "description",
+    "mode",
+    "createdAt",
+    "updatedAt",
+    "durationEstimate",
+    "blocks",
+    "audioSettings",
+    "visualSettings",
+    "safetyReview",
+    "exportSettings",
+    "experimentMetadata"
+  ],
+  "additionalProperties": false,
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

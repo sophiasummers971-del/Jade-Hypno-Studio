@@ -1,0 +1,61 @@
+{
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "defaultSessionDuration": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1440
+    },
+    "defaultVoiceId": {
+      "type": "string",
+      "maxLength": 256
+    },
+    "defaultOutputResolution": {
+      "type": "string",
+      "enum": [
+        "1280x720",
+        "1920x1080",
+        "3840x2160"
+      ]
+    },
+    "defaultExportDirectory": {
+      "type": "string",
+      "maxLength": 4096
+    },
+    "captionsEnabled": {
+      "type": "boolean"
+    },
+    "defaultNarrationLevel": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "defaultMusicLevel": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "defaultAmbientLevel": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "defaultSessionDuration",
+    "defaultVoiceId",
+    "defaultOutputResolution",
+    "defaultExportDirectory",
+    "captionsEnabled",
+    "defaultNarrationLevel",
+    "defaultMusicLevel",
+    "defaultAmbientLevel"
+  ],
+  "additionalProperties": false,
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

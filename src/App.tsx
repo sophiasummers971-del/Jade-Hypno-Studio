@@ -1,0 +1,859 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { isTauri } from '@tauri-apps/api/core';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import {
+  modes,
+  resolutions,
+  newSession,
+  type Session,
+  type Settings,
+} from './domain/schema';
+import {
+  repository,
+  duplicateSession,
+  type Repository,
+  type SessionList,
+} from './storage/repository';
+import { Autosave, type SaveState } from './storage/autosave';
+import { ErrorNotice, errorDetail } from './components/ErrorNotice';
+import { Modal } from './components/Modal';
+
+type View =
+  | 'Home'
+  | 'Sessions'
+  | 'New Session'
+  | 'Session Editor'
+  | 'Settings'
+  | 'About / Safety';
+const emptyList: SessionList = { sessions: [], issues: [] };
+export function App({ repo = repository }: { repo?: Repository }) {
+  const [view, setView] = useState<View>('Home');
+  const [list, setList] = useState(emptyList);
+  const [settings, setSettings] = useState<Settings | null>(null);
+  const [draftSettings, setDraftSettings] = useState<Settings | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [saveState, setSaveState] = useState<SaveState>('saved');
+  const [title, setTitle] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState<{
+    message: string;
+    detail: string;
+  } | null>(null);
+  const [status, setStatus] = useState('');
+  const [action, setAction] = useState<{
+    type: 'rename' | 'delete' | 'reopen';
+    session: Session;
+  } | null>(null);
+  const [rename, setRename] = useState('');
+  const writer = useRef<Autosave | null>(null);
+  const guard = useRef(false);
+  const latest = useRef({ settings, draftSettings });
+  latest.current = { settings, draftSettings };
+  const native = isTauri();
+  const available = native || repo !== repository;
+  const report = useCallback(
+    (message: string, problem: unknown) =>
+      setError({ message, detail: errorDetail(problem) }),
+    [],
+  );
+  const refresh = useCallback(async () => setList(await repo.list()), [repo]);
+  useEffect(() => {
+    if (!available) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const loaded = await repo.loadSettings();
+        if (!cancelled) {
+          setSettings(loaded);
+          setDraftSettings(loaded);
+        }
+      } catch (problem) {
+        if (!cancelled)
+          report(
+            'Settings could not be loaded. Repair the original file before saving settings.',
+            problem,
+          );
+      }
+      try {
+        const loaded = await repo.list();
+        if (!cancelled) setList(loaded);
+      } catch (problem) {
+        if (!cancelled) report('Sessions could not be listed.', problem);
+      }
+      if (!cancelled) setReady(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [available, repo, report]);
+  useEffect(() => () => writer.current?.dispose(), []);
+  const flushAll = useCallback(async () => {
+    await writer.current?.flush();
+    const { settings: saved, draftSettings: draft } = latest.current;
+    if (draft && JSON.stringify(draft) !== JSON.stringify(saved)) {
+      const result = await repo.saveSettings(draft);
+      setSettings(result);
+      setDraftSettings(result);
+      latest.current = { settings: result, draftSettings: result };
+    }
+  }, [repo]);
+  // The OS close button uses the same save barrier as internal navigation.
+  useEffect(() => {
+    const preventReload = (event: BeforeUnloadEvent) => {
+      const current = latest.current;
+      if (
+        writer.current?.dirty ||
+        JSON.stringify(current.settings) !==
+          JSON.stringify(current.draftSettings)
+      ) {
+        event.preventDefault();
+        event.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', preventReload);
+    if (!native)
+      return () => window.removeEventListener('beforeunload', preventReload);
+    let disposed = false;
+    let unlisten: (() => void) | undefined;
+    void getCurrentWindow()
+      .onCloseRequested(async (event) => {
+        event.preventDefault();
+        if (guard.current) return;
+        guard.current = true;
+        setBusy(true);
+        try {
+          await flushAll();
+          await getCurrentWindow().destroy();
+        } catch (problem) {
+          report(
+            'Could not save before closing. The window remains open; fix the issue and retry.',
+            problem,
+          );
+        } finally {
+          guard.current = false;
+          setBusy(false);
+        }
+      })
+      .then((remove) => {
+        if (disposed) remove();
+        else unlisten = remove;
+      })
+      .catch((problem) =>
+        report(
+          'The window-close save guard could not start. Save manually before closing.',
+          problem,
+        ),
+      );
+    return () => {
+      disposed = true;
+      unlisten?.();
+      window.removeEventListener('beforeunload', preventReload);
+    };
+  }, [native, flushAll, report]);
+  async function run(task: () => Promise<void>) {
+    if (guard.current) return;
+    guard.current = true;
+    setBusy(true);
+    setStatus('');
+    try {
+      await task();
+    } catch (problem) {
+      report('The local operation could not be completed.', problem);
+    } finally {
+      guard.current = false;
+      setBusy(false);
+    }
+  }
+  function openEditor(value: Session) {
+    writer.current?.dispose();
+    writer.current = new Autosave(repo, value, (state, saved, problem) => {
+      setSaveState(state);
+      if (saved) setSession(saved);
+      if (problem)
+        report(
+          'Save failed. Your changes have not been saved. Use Save to retry.',
+          problem,
+        );
+    });
+    setSession(value);
+    setSaveState('saved');
+    setView('Session Editor');
+    setError(null);
+  }
+  function edit(next: Session) {
+    setSession(next);
+    writer.current?.edit(next);
+  }
+  function navigate(next: View) {
+    void run(async () => {
+      await flushAll();
+      if (next === 'Sessions' || next === 'Home') await refresh();
+      setView(next);
+    });
+  }
+  const settingsDirty =
+    JSON.stringify(settings) !== JSON.stringify(draftSettings);
+  return (
+    <div className="shell">
+      <aside>
+        <div className="brand">
+          <span className="monogram" aria-hidden="true">
+            J
+          </span>
+          <div>
+            JADE<span>HYPNO STUDIO</span>
+          </div>
+        </div>
+        <p className="eyebrow">PERSONAL WORKSPACE</p>
+        <nav aria-label="Main navigation">
+          {(
+            [
+              'Home',
+              'Sessions',
+              'New Session',
+              'Settings',
+              'About / Safety',
+            ] as View[]
+          ).map((item) => (
+            <button
+              key={item}
+              aria-current={view === item ? 'page' : undefined}
+              disabled={busy}
+              onClick={() => navigate(item)}
+            >
+              {item}
+            </button>
+          ))}
+        </nav>
+        <div className="sidebar-foot">
+          <span className="dot" /> Local & private
+          <p>Foundation · Milestone 1</p>
+        </div>
+      </aside>
+      <main aria-busy={busy}>
+        <header>
+          <p className="eyebrow">YOUR SPACE. YOUR CONTROL.</p>
+          <span className="badge">FOUNDATION / 01</span>
+        </header>
+        {!available && (
+          <div className="notice" role="status">
+            Browser preview only. Open the Tauri desktop app for local files and
+            editing. No browser storage fallback is used.
+          </div>
+        )}
+        {available && !ready && <p role="status">Opening local workspace…</p>}
+        {error && <ErrorNotice {...error} dismiss={() => setError(null)} />}
+        {status && (
+          <p role="status" className="notice">
+            {status}
+          </p>
+        )}
+        {view === 'Home' && (
+          <>
+            <h1>A quiet place to create.</h1>
+            <p className="lead">
+              Build your personal session library, one idea at a time.
+            </p>
+            <section className="welcome">
+              <p className="eyebrow">JADE HYPNO STUDIO</p>
+              <h2>Start with a blank session.</h2>
+              <p>
+                Give it a name, set its direction, and keep your work on this
+                device.
+              </p>
+              <button
+                className="primary"
+                disabled={!settings || busy}
+                onClick={() => navigate('New Session')}
+              >
+                New session <span aria-hidden="true">＋</span>
+              </button>
+            </section>
+            <div className="cards">
+              <section>
+                <h2>{list.sessions.length} saved sessions</h2>
+                <p>JSON files in your application data folder.</p>
+                <button
+                  disabled={!ready || busy}
+                  onClick={() => navigate('Sessions')}
+                >
+                  View sessions
+                </button>
+              </section>
+              <section>
+                <h2>Foundation only</h2>
+                <p>
+                  Session metadata and local saving are available. Playback,
+                  voices and rendering come later.
+                </p>
+                <button
+                  onClick={() => navigate('About / Safety')}
+                  disabled={busy}
+                >
+                  About this build
+                </button>
+              </section>
+            </div>
+          </>
+        )}
+        {view === 'Sessions' && (
+          <>
+            <h1>Sessions</h1>
+            <p className="lead">
+              Your local collection. Open a session to continue.
+            </p>
+            <button
+              className="primary"
+              disabled={!settings || busy}
+              onClick={() => navigate('New Session')}
+            >
+              New session
+            </button>
+            {list.issues.length > 0 && (
+              <section className="error">
+                <h2>Some files could not be opened</h2>
+                <p>
+                  Originals were left unchanged. Repair them manually in the
+                  sessions folder.
+                </p>
+                {list.issues.map((issue) => (
+                  <details key={issue.file}>
+                    <summary>{issue.file}</summary>
+                    <pre>{issue.message}</pre>
+                  </details>
+                ))}
+              </section>
+            )}
+            <div className="session-list">
+              {list.sessions.length === 0 ? (
+                <section>
+                  <h2>No sessions yet</h2>
+                  <p>Create a blank session to begin.</p>
+                </section>
+              ) : (
+                list.sessions.map((item) => (
+                  <article className="session-row" key={item.id}>
+                    <div>
+                      <h2>{item.title}</h2>
+                      <p>
+                        {item.mode} · {Math.round(item.durationEstimate / 60)}{' '}
+                        min · Modified{' '}
+                        {new Date(item.updatedAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="actions">
+                      <button
+                        disabled={busy}
+                        onClick={() =>
+                          void run(async () => {
+                            await flushAll();
+                            openEditor(await repo.load(item.id));
+                          })
+                        }
+                      >
+                        Open <span className="sr-only">{item.title}</span>
+                      </button>
+                      <button
+                        disabled={busy}
+                        onClick={() =>
+                          void run(async () => {
+                            await duplicateSession(
+                              repo,
+                              await repo.load(item.id),
+                            );
+                            await refresh();
+                            setStatus('Session duplicated.');
+                          })
+                        }
+                      >
+                        Duplicate <span className="sr-only">{item.title}</span>
+                      </button>
+                      <button
+                        disabled={busy}
+                        onClick={() => {
+                          setAction({ type: 'rename', session: item });
+                          setRename(item.title);
+                        }}
+                      >
+                        Rename <span className="sr-only">{item.title}</span>
+                      </button>
+                      <button
+                        disabled={busy}
+                        onClick={() =>
+                          setAction({ type: 'delete', session: item })
+                        }
+                      >
+                        Delete <span className="sr-only">{item.title}</span>
+                      </button>
+                    </div>
+                  </article>
+                ))
+              )}
+            </div>
+          </>
+        )}
+        {view === 'New Session' && (
+          <>
+            <h1>New session</h1>
+            <p className="lead">
+              A blank canvas. No generated scripts or playback.
+            </p>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void run(async () => {
+                  if (!settings) throw new Error('Settings are unavailable.');
+                  await flushAll();
+                  const created = await repo.save(
+                    newSession(title, settings),
+                    null,
+                  );
+                  setTitle('');
+                  openEditor(created);
+                });
+              }}
+            >
+              <fieldset disabled={!settings || busy}>
+                <label>
+                  Session title
+                  <input
+                    autoFocus
+                    required
+                    maxLength={200}
+                    value={title}
+                    onChange={(event) => setTitle(event.target.value)}
+                  />
+                </label>
+                <p>
+                  Starts at {settings?.defaultSessionDuration ?? '—'} minutes
+                  using your saved defaults. Duration is an estimate.
+                </p>
+                <button className="primary" disabled={!title.trim()}>
+                  Create session
+                </button>
+              </fieldset>
+            </form>
+          </>
+        )}
+        {view === 'Session Editor' && session && (
+          <>
+            <div className="page-heading">
+              <div>
+                <h1>Session editor</h1>
+                <p className="lead">
+                  Shape the outline. Blocks arrive in Milestone 2.
+                </p>
+              </div>
+              <span role="status" className={`badge save-${saveState}`}>
+                {
+                  {
+                    saved: 'Saved locally',
+                    unsaved: 'Unsaved changes',
+                    saving: 'Saving…',
+                    error: 'Not saved — retry',
+                  }[saveState]
+                }
+              </span>
+            </div>
+            <fieldset disabled={busy}>
+              <label>
+                Title
+                <input
+                  maxLength={200}
+                  value={session.title}
+                  onChange={(event) =>
+                    edit({ ...session, title: event.target.value })
+                  }
+                />
+              </label>
+              <label>
+                Description
+                <textarea
+                  rows={5}
+                  maxLength={10000}
+                  value={session.description}
+                  onChange={(event) =>
+                    edit({ ...session, description: event.target.value })
+                  }
+                />
+              </label>
+              <label>
+                Mode
+                <select
+                  value={session.mode}
+                  onChange={(event) =>
+                    edit({
+                      ...session,
+                      mode: event.target.value as Session['mode'],
+                    })
+                  }
+                >
+                  {modes.map((mode) => (
+                    <option key={mode}>{mode}</option>
+                  ))}
+                </select>
+              </label>
+              <div className="actions">
+                <button
+                  className="primary"
+                  onClick={() =>
+                    void run(async () => {
+                      await writer.current?.flush();
+                      setError(null);
+                      setStatus('Session saved locally.');
+                    })
+                  }
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() =>
+                    void run(async () => {
+                      const source = writer.current?.snapshot;
+                      if (!source) return;
+                      const copy = await duplicateSession(repo, source);
+                      setStatus(
+                        `Saved a separate copy: ${copy.title}. You are still editing the original.`,
+                      );
+                    })
+                  }
+                >
+                  Save as copy
+                </button>
+                <button
+                  disabled={saveState === 'saving'}
+                  onClick={() => setAction({ type: 'reopen', session })}
+                >
+                  Reopen saved version
+                </button>
+              </div>
+            </fieldset>
+            <section>
+              <h2>
+                Session outline{' '}
+                <span className="badge">{session.blocks.length} BLOCKS</span>
+              </h2>
+              {session.blocks.length ? (
+                session.blocks.map((block) => (
+                  <div className="block" key={block.id}>
+                    {block.title || block.type} ·{' '}
+                    {block.enabled ? 'Enabled' : 'Disabled'} ·{' '}
+                    {block.estimatedDuration}s
+                  </div>
+                ))
+              ) : (
+                <p>
+                  No blocks yet. This foundation stores the structure; block
+                  editing is not part of this milestone.
+                </p>
+              )}
+            </section>
+            <details className="metadata">
+              <summary>Session metadata</summary>
+              <dl>
+                <dt>ID</dt>
+                <dd>{session.id}</dd>
+                <dt>Created</dt>
+                <dd>{new Date(session.createdAt).toLocaleString()}</dd>
+                <dt>Last saved</dt>
+                <dd>{new Date(session.updatedAt).toLocaleString()}</dd>
+                <dt>Estimated duration</dt>
+                <dd>{session.durationEstimate / 60} minutes</dd>
+                <dt>Schema</dt>
+                <dd>Version {session.schemaVersion}</dd>
+              </dl>
+            </details>
+          </>
+        )}
+        {view === 'Settings' && (
+          <>
+            <h1>Settings</h1>
+            <p className="lead">
+              Defaults for new sessions. Existing sessions keep their settings.
+            </p>
+            {draftSettings ? (
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void run(async () => {
+                    await flushAll();
+                    setStatus('Settings saved locally.');
+                  });
+                }}
+              >
+                <fieldset disabled={busy}>
+                  <div className="form-grid">
+                    <label>
+                      Default duration (minutes)
+                      <input
+                        type="number"
+                        min={1}
+                        max={1440}
+                        required
+                        value={draftSettings.defaultSessionDuration}
+                        onChange={(event) =>
+                          setDraftSettings({
+                            ...draftSettings,
+                            defaultSessionDuration: Number(event.target.value),
+                          })
+                        }
+                      />
+                    </label>
+                    <label>
+                      Output resolution
+                      <select
+                        value={draftSettings.defaultOutputResolution}
+                        onChange={(event) =>
+                          setDraftSettings({
+                            ...draftSettings,
+                            defaultOutputResolution: event.target
+                              .value as Settings['defaultOutputResolution'],
+                          })
+                        }
+                      >
+                        {resolutions.map((value) => (
+                          <option key={value}>{value}</option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  <label>
+                    TTS voice identifier (placeholder)
+                    <input
+                      maxLength={256}
+                      value={draftSettings.defaultVoiceId}
+                      onChange={(event) =>
+                        setDraftSettings({
+                          ...draftSettings,
+                          defaultVoiceId: event.target.value,
+                        })
+                      }
+                    />
+                  </label>
+                  <p className="hint">
+                    Stored as a preference only. No voice service is connected.
+                  </p>
+                  <label>
+                    Default export directory (placeholder)
+                    <input
+                      maxLength={4096}
+                      value={draftSettings.defaultExportDirectory}
+                      placeholder="Not set"
+                      onChange={(event) =>
+                        setDraftSettings({
+                          ...draftSettings,
+                          defaultExportDirectory: event.target.value,
+                        })
+                      }
+                    />
+                  </label>
+                  <p className="hint">
+                    Text preference only; no files are written to this path.
+                  </p>
+                  <label className="check">
+                    <input
+                      type="checkbox"
+                      checked={draftSettings.captionsEnabled}
+                      onChange={(event) =>
+                        setDraftSettings({
+                          ...draftSettings,
+                          captionsEnabled: event.target.checked,
+                        })
+                      }
+                    />{' '}
+                    Enable captions by default
+                  </label>
+                  {(
+                    [
+                      'defaultNarrationLevel',
+                      'defaultMusicLevel',
+                      'defaultAmbientLevel',
+                    ] as const
+                  ).map((key, index) => (
+                    <label key={key}>
+                      {['Narration', 'Music', 'Ambient'][index]} level:{' '}
+                      {Math.round(draftSettings[key] * 100)}%
+                      <input
+                        type="range"
+                        min={0}
+                        max={1}
+                        step={0.01}
+                        value={draftSettings[key]}
+                        onChange={(event) =>
+                          setDraftSettings({
+                            ...draftSettings,
+                            [key]: Number(event.target.value),
+                          })
+                        }
+                      />
+                    </label>
+                  ))}
+                  <div className="actions">
+                    <button className="primary" type="submit">
+                      Save settings
+                    </button>
+                    <span role="status">
+                      {settingsDirty
+                        ? 'Unsaved settings · saved when you leave this view'
+                        : 'Settings saved'}
+                    </span>
+                  </div>
+                </fieldset>
+              </form>
+            ) : (
+              <p>
+                Settings are unavailable. Open the desktop app, or inspect the
+                diagnostic message above.
+              </p>
+            )}
+          </>
+        )}
+        {view === 'About / Safety' && (
+          <>
+            <h1>About / Safety</h1>
+            <p className="lead">
+              Private by design. Always under your control.
+            </p>
+            <section>
+              <h2>Jade Hypno Studio · 0.1.0</h2>
+              <p>
+                A local-first workspace for one adult to organise personalised
+                audiovisual sessions. This is not a medical application or
+                therapy service.
+              </p>
+              <p>
+                This build only manages session structure and local files. It
+                does not play hypnosis, generate scripts, connect to AI or voice
+                services, or influence anyone.
+              </p>
+            </section>
+            <section>
+              <h2>Your data stays on this device</h2>
+              <p>
+                No accounts, telemetry, analytics, remote logging or cloud
+                backend. Session files are plain JSON, not encrypted. Other
+                people with access to your operating system account may be able
+                to read them.
+              </p>
+              <p>
+                Deletion moves files to the local Trash folder. Trash is
+                retained until you remove it manually. Back up the application
+                data folder yourself.
+              </p>
+            </section>
+            <section>
+              <h2>Transparent boundaries</h2>
+              <p>
+                Only create material for your own informed, voluntary use.
+                Future audiovisual features are not included here. Voice,
+                caption and export preferences are stored placeholders.
+              </p>
+              <p>
+                Autosave waits 600 ms after edits. Save before shutting down;
+                force-quitting or losing power can lose edits that have not
+                reached disk.
+              </p>
+            </section>
+          </>
+        )}
+        {action && (
+          <Modal>
+            <h2 id="dialog-title">
+              {action.type === 'delete'
+                ? 'Move session to Trash?'
+                : action.type === 'reopen'
+                  ? 'Discard edits and reopen?'
+                  : 'Rename session'}
+            </h2>
+            <p>{action.session.title}</p>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void run(async () => {
+                  if (action.type === 'reopen') {
+                    await writer.current?.cancelPendingAndWait();
+                    openEditor(await repo.load(action.session.id));
+                    setAction(null);
+                    return;
+                  }
+                  if (action.type === 'delete') {
+                    await repo.trash(
+                      action.session.id,
+                      action.session.updatedAt,
+                    );
+                    if (session?.id === action.session.id) {
+                      writer.current?.dispose();
+                      writer.current = null;
+                      setSession(null);
+                    }
+                  } else {
+                    const updated = await repo.save(
+                      { ...action.session, title: rename.trim() },
+                      action.session.updatedAt,
+                    );
+                    if (session?.id === updated.id) {
+                      writer.current?.dispose();
+                      writer.current = null;
+                      setSession(null);
+                    }
+                  }
+                  setAction(null);
+                  await refresh();
+                  setStatus(
+                    action.type === 'delete'
+                      ? 'Moved to Trash. The JSON file can be recovered manually.'
+                      : 'Session renamed.',
+                  );
+                });
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape' && !busy) setAction(null);
+              }}
+            >
+              <fieldset disabled={busy}>
+                {action.type === 'rename' ? (
+                  <label>
+                    New title
+                    <input
+                      autoFocus
+                      required
+                      maxLength={200}
+                      value={rename}
+                      onChange={(event) => setRename(event.target.value)}
+                    />
+                  </label>
+                ) : (
+                  <p>
+                    {action.type === 'reopen'
+                      ? 'Unsaved edits will be discarded. Use Save as copy first if you want to keep them.'
+                      : 'This keeps the original JSON in the application’s Trash folder.'}
+                  </p>
+                )}
+                <div className="actions">
+                  <button
+                    autoFocus={action.type === 'delete'}
+                    type="button"
+                    onClick={() => setAction(null)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className={action.type === 'delete' ? 'danger' : 'primary'}
+                    disabled={action.type === 'rename' && !rename.trim()}
+                  >
+                    {action.type === 'delete'
+                      ? 'Move to Trash'
+                      : action.type === 'reopen'
+                        ? 'Discard and reopen'
+                        : 'Rename'}
+                  </button>
+                </div>
+              </fieldset>
+            </form>
+          </Modal>
+        )}
+      </main>
+    </div>
+  );
+}

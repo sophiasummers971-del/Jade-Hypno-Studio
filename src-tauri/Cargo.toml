@@ -1,0 +1,31 @@
+[package]
+name = "jade-hypno-studio"
+version = "0.1.0"
+description = "Private local-first session foundation"
+edition = "2021"
+rust-version = "1.80"
+
+[lib]
+name = "jade_hypno_studio"
+
+[[bin]]
+name = "jade-hypno-studio"
+path = "src/main.rs"
+required-features = ["desktop"]
+
+[features]
+default = ["desktop"]
+desktop = ["dep:tauri", "dep:tauri-build"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [], optional = true }
+
+[dependencies]
+tauri = { version = "2", features = [], optional = true }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+jsonschema = { version = "0.18", default-features = false }
+uuid = { version = "1", features = ["v4"] }
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+tempfile = "3"
+fs2 = "0.4"
