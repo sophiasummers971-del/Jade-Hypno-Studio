@@ -792,7 +792,7 @@ export function App({
                     </label>
                   </div>
                   <label>
-                    Default TTS voice identifier
+                    TTS voice identifier (placeholder)
                     <input
                       maxLength={256}
                       value={draftSettings.defaultVoiceId}
