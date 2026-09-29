@@ -350,7 +350,9 @@ export function App({
               <section>
                 <h2>Foundation only</h2>
                 <p>
-                  Script, review, audio, visuals, and the immersive player are local and offline-capable. Rendered video export remains capability-dependent.
+                  Script, review, audio, visuals, and the immersive player are
+                  local and offline-capable. Rendered video export remains
+                  capability-dependent.
                 </p>
                 <button
                   onClick={() => navigate('About / Safety')}
@@ -686,8 +688,17 @@ export function App({
             <VisualPanel session={session} onChange={edit} />
             <section className="player-launch">
               <h2>Immersive player</h2>
-              <p>Review the session, then start playback explicitly. Nothing starts automatically.</p>
-              <button className="primary" type="button" onClick={() => setView('Player')}>Open player</button>
+              <p>
+                Review the session, then start playback explicitly. Nothing
+                starts automatically.
+              </p>
+              <button
+                className="primary"
+                type="button"
+                onClick={() => setView('Player')}
+              >
+                Open player
+              </button>
             </section>
             <details className="metadata">
               <summary>Session metadata</summary>
@@ -707,7 +718,10 @@ export function App({
           </>
         )}
         {view === 'Player' && session && (
-          <PlayerView session={session} onExit={() => setView('Session Editor')} />
+          <PlayerView
+            session={session}
+            onExit={() => setView('Session Editor')}
+          />
         )}
         {view === 'Session Review' && session && (
           <SessionReview
