@@ -49,6 +49,7 @@ export const VoiceSettingsSchema = z
 export const AudioSettingsSchema = z
   .object({
     narrationLevel: level,
+    narrationReference: text(4096).default(''),
     musicReference: text(4096).default(''),
     ambientReference: text(4096).default(''),
     musicLevel: level,
