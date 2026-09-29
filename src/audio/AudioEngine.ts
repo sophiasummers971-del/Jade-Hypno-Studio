@@ -4,6 +4,7 @@ import { AudioMixer } from './AudioMixer';
 import { parseNarration, playableBlocks } from './AudioTimeline';
 import type { SpeechEngine } from './SpeechEngine';
 import type { AudioEngineSnapshot, LocalAudioTrack } from './types';
+import type { MediaResolver } from '../visual/MediaResolver';
 
 type Listener = (snapshot: AudioEngineSnapshot) => void;
 export class AudioEngine {
@@ -22,9 +23,13 @@ export class AudioEngine {
   constructor(
     readonly speech: SpeechEngine,
     readonly mixer: AudioMixer,
+    readonly media?: MediaResolver,
   ) {
     this.unregisterReturnNow = registerReturnNowHooks({
-      stopNarration: () => this.speech.stop(),
+      stopNarration: () => {
+        this.speech.stop();
+        this.mixer.stopAll();
+      },
       stopActiveMedia: () => this.mixer.stopAll(),
       fadeOrStopAudio: () => this.mixer.stopAll(),
       clearTemporarySessionState: () => this.reset(),
@@ -57,11 +62,9 @@ export class AudioEngine {
     this.startedAt = performance.now();
     this.set({ state: 'loading', currentBlockId: block.id, error: null });
     try {
+      this.mixer.setLevels({ narration: block.audioSettings.narrationLevel });
       this.set({ state: 'playing' });
-      await this.speech.speak(parseNarration(block.narration), {
-        ...block.voiceSettings,
-        volume: block.voiceSettings.volume * block.audioSettings.narrationLevel,
-      });
+      await this.playNarration(block);
       if (token === this.token)
         this.set({
           state: 'idle',
@@ -102,11 +105,7 @@ export class AudioEngine {
           currentBlockId: block.id,
           elapsedSeconds: (performance.now() - this.startedAt) / 1000,
         });
-        await this.speech.speak(parseNarration(block.narration), {
-          ...block.voiceSettings,
-          volume:
-            block.voiceSettings.volume * block.audioSettings.narrationLevel,
-        });
+        await this.playNarration(block);
       }
       if (token === this.token) {
         await this.mixer.fadeOutAll(session.audioSettings.fadeOutDuration);
@@ -124,6 +123,32 @@ export class AudioEngine {
           error:
             error instanceof Error ? error.message : 'Audio playback failed.',
         });
+    }
+  }
+  private async playNarration(block: SessionBlock) {
+    const reference = block.audioSettings.narrationReference;
+    if (!reference) {
+      await this.speech.speak(parseNarration(block.narration), {
+        ...block.voiceSettings,
+        volume: block.voiceSettings.volume * block.audioSettings.narrationLevel,
+      });
+      return;
+    }
+    if (!this.media)
+      throw new Error('Local narration media is unavailable in this player.');
+    const resolved = await this.media.resolveAudio(reference);
+    if (!resolved)
+      throw new Error('The local narration audio file is missing from this device.');
+    try {
+      await this.mixer.playToEnd({
+        id: `narration:${block.id}`,
+        kind: 'narration',
+        name: resolved.asset.name,
+        mimeType: resolved.asset.mimeType,
+        url: resolved.url,
+      });
+    } finally {
+      this.media.revoke(reference);
     }
   }
   pause() {
