@@ -80,8 +80,49 @@ export const TransitionSettingsSchema = z
     duration: z.number().finite().min(0).max(30),
   })
   .strict();
+const ReviewSeveritySchema = z.enum(['info', 'warning', 'required-review']);
+const FindingStatusSchema = z.enum([
+  'unresolved',
+  'reviewed',
+  'dismissed',
+  'edited',
+]);
+export const SafetyFindingSchema = z
+  .object({
+    id: text(512),
+    ruleId: text(128),
+    blockId: id,
+    severity: ReviewSeveritySchema,
+    category: text(128),
+    matchedText: text(2000),
+    startOffset: z.number().int().nonnegative(),
+    endOffset: z.number().int().nonnegative(),
+    status: FindingStatusSchema,
+    note: text(5000).default(''),
+    present: z.boolean().default(true),
+  })
+  .strict();
+export const StructuralCheckSchema = z
+  .object({
+    id: text(128),
+    label: text(256),
+    severity: ReviewSeveritySchema,
+    status: z.enum(['pass', 'missing']),
+    explanation: text(2000),
+  })
+  .strict();
 export const SafetyReviewSchema = z
-  .object({ status: z.enum(['not-reviewed', 'reviewed']), notes: text(10000) })
+  .object({
+    status: z.enum(['not-reviewed', 'reviewed']),
+    notes: text(10000),
+    reviewedAt: z.string().datetime().nullable().default(null),
+    lastScannedAt: z.string().datetime().nullable().default(null),
+    scannerVersion: text(64).default(''),
+    findings: z.array(SafetyFindingSchema).max(2000).default([]),
+    structuralChecks: z.array(StructuralCheckSchema).max(100).default([]),
+    reviewerAcknowledged: z.boolean().default(false),
+    unresolvedCount: z.number().int().nonnegative().default(0),
+  })
   .strict();
 export const ExportSettingsSchema = z
   .object({
@@ -179,6 +220,8 @@ export type AudioSettings = z.infer<typeof AudioSettingsSchema>;
 export type VisualSettings = z.infer<typeof VisualSettingsSchema>;
 export type CaptionSettings = z.infer<typeof CaptionSettingsSchema>;
 export type TransitionSettings = z.infer<typeof TransitionSettingsSchema>;
+export type SafetyFinding = z.infer<typeof SafetyFindingSchema>;
+export type StructuralCheck = z.infer<typeof StructuralCheckSchema>;
 export type SafetyReview = z.infer<typeof SafetyReviewSchema>;
 export type ExportSettings = z.infer<typeof ExportSettingsSchema>;
 export type ExperimentMetadata = z.infer<typeof ExperimentMetadataSchema>;
@@ -217,7 +260,10 @@ export function newSession(title: string, settings: Settings): Session {
       resolution: settings.defaultOutputResolution,
       backgroundColor: '#101319',
     },
-    safetyReview: { status: 'not-reviewed', notes: '' },
+    safetyReview: SafetyReviewSchema.parse({
+      status: 'not-reviewed',
+      notes: '',
+    }),
     exportSettings: {
       directory: settings.defaultExportDirectory,
       resolution: settings.defaultOutputResolution,
@@ -234,6 +280,10 @@ export function copySession(session: Session): Session {
     title: `${session.title.slice(0, 193)} (copy)`,
     createdAt: now,
     updatedAt: now,
+    safetyReview: SafetyReviewSchema.parse({
+      status: 'not-reviewed',
+      notes: '',
+    }),
   });
 }
 export function parseSession(json: string): Session {
