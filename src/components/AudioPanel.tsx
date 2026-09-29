@@ -5,6 +5,7 @@ import { AudioMixer } from '../audio/AudioMixer';
 import { BrowserSpeechEngine } from '../audio/BrowserSpeechEngine';
 import { BrowserAudioExporter } from '../audio/AudioExport';
 import { estimateNarrationSeconds } from '../audio/AudioTimeline';
+import { MediaResolver } from '../visual/MediaResolver';
 import type {
   AudioEngineSnapshot,
   AudioTrackKind,
@@ -34,9 +35,10 @@ export function AudioPanel({
     session.blocks.find((block) => block.id === activeBlockId) ??
     session.blocks[0] ??
     null;
+  const resolver = useMemo(() => new MediaResolver(), []);
   const engine = useMemo(
-    () => new AudioEngine(new BrowserSpeechEngine(), new AudioMixer()),
-    [],
+    () => new AudioEngine(new BrowserSpeechEngine(), new AudioMixer(), resolver),
+    [resolver],
   );
   const [playback, setPlayback] = useState(initial);
   const [voices, setVoices] = useState<SpeechVoice[]>([]);
@@ -46,7 +48,10 @@ export function AudioPanel({
   const exporter = useMemo(() => new BrowserAudioExporter(), []);
 
   useEffect(() => engine.subscribe(setPlayback), [engine]);
-  useEffect(() => () => engine.dispose(), [engine]);
+  useEffect(() => () => {
+    engine.dispose();
+    resolver.dispose();
+  }, [engine, resolver]);
   useEffect(() => {
     if (!speechSupported) return;
     void engine.speech
@@ -104,6 +109,22 @@ export function AudioPanel({
     );
   };
 
+  const importNarration = async (file: File) => {
+    if (!activeBlock) return;
+    try {
+      const asset = await resolver.importAudio(file);
+      patchBlock({
+        audioSettings: {
+          ...activeBlock.audioSettings,
+          narrationReference: asset.id,
+        },
+      });
+      setNotice(`${asset.name} stored locally as narration for this block. Nothing was uploaded.`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Narration audio import failed.');
+    }
+  };
+
   const selectedVoiceMissing = Boolean(
     activeBlock?.voiceSettings.voiceId &&
     voices.length &&
@@ -148,6 +169,35 @@ export function AudioPanel({
       <div className="audio-grid">
         <section>
           <h3>Narration</h3>
+          <input
+            ref={(el) => { inputs.current.narration = el; }}
+            className="sr-only"
+            type="file"
+            accept={accept}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = '';
+              if (file) void importNarration(file);
+            }}
+          />
+          <div className="media-row">
+            <button disabled={!activeBlock} onClick={() => inputs.current.narration?.click()}>
+              Choose local narration
+            </button>
+            <button
+              disabled={!activeBlock?.audioSettings.narrationReference}
+              onClick={() => activeBlock && patchBlock({
+                audioSettings: { ...activeBlock.audioSettings, narrationReference: '' },
+              })}
+            >
+              Use TTS instead
+            </button>
+          </div>
+          <p className="hint">
+            {activeBlock?.audioSettings.narrationReference
+              ? 'Local narration audio replaces TTS for this block. Narration text remains available for captions.'
+              : 'No local narration selected. This block uses device TTS.'}
+          </p>
           <label>
             Preview block
             <select
@@ -230,7 +280,7 @@ export function AudioPanel({
               className="primary"
               disabled={
                 !activeBlock ||
-                !speechSupported ||
+                (!speechSupported && !activeBlock.audioSettings.narrationReference) ||
                 playback.state === 'playing' ||
                 playback.state === 'loading'
               }
@@ -257,7 +307,7 @@ export function AudioPanel({
               Stop
             </button>
             <button
-              disabled={!activeBlock || !speechSupported}
+              disabled={!activeBlock || (!speechSupported && !activeBlock.audioSettings.narrationReference)}
               onClick={() =>
                 activeBlock && void engine.restartBlock(activeBlock)
               }
@@ -381,7 +431,7 @@ export function AudioPanel({
           <button
             className="primary"
             disabled={
-              !speechSupported ||
+              (!speechSupported && !session.blocks.some((block) => block.audioSettings.narrationReference)) ||
               playback.state === 'playing' ||
               playback.state === 'loading'
             }
