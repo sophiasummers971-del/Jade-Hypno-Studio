@@ -7,8 +7,9 @@ import {
   type Settings,
 } from '../../domain/schema';
 import type { Repository, SessionList } from '../repository';
+import { ExperimentRecordSchema, type ExperimentRecord } from '../../experiment/model';
 
-const STORE_VERSION = 1;
+const STORE_VERSION = 2;
 export const DATABASE_NAME = 'jade-hypno-studio';
 const SETTINGS_KEY = 'preferences';
 const MAX_BYTES = 4 * 1024 * 1024;
@@ -71,7 +72,7 @@ export class IndexedDBRepository implements Repository {
         };
         request.onupgradeneeded = () => {
           const db = request.result;
-          for (const name of ['sessions', 'settings', 'trash'])
+          for (const name of ['sessions', 'settings', 'trash', 'experiments'])
             if (!db.objectStoreNames.contains(name)) db.createObjectStore(name);
         };
         request.onerror = () => fail(request.error);
@@ -293,6 +294,71 @@ export class IndexedDBRepository implements Repository {
           });
       },
     );
+  }
+  listExperiments(sessionId?: string): Promise<ExperimentRecord[]> {
+    return this.transaction(['experiments'], 'readonly', (tx, done, guard) => {
+      const records: ExperimentRecord[] = [];
+      const cursor = tx.objectStore('experiments').openCursor();
+      cursor.onsuccess = () =>
+        guard(() => {
+          const row = cursor.result;
+          if (!row) {
+            records.sort((a, b) => b.completedAt.localeCompare(a.completedAt));
+            done(records);
+            return;
+          }
+          const record = ExperimentRecordSchema.parse(row.value);
+          if (record.id !== row.key) throw new Error('Experiment ID differs from its storage key.');
+          if (!sessionId || record.sessionId === sessionId) records.push(record);
+          row.continue();
+        });
+    });
+  }
+  saveExperiment(
+    record: ExperimentRecord,
+    expectedUpdatedAt: string | null,
+  ): Promise<ExperimentRecord> {
+    const input = ExperimentRecordSchema.parse(record);
+    bounded(input);
+    return this.transaction(['experiments'], 'readwrite', (tx, done, guard) => {
+      const store = tx.objectStore('experiments');
+      const request = store.get(input.id);
+      request.onsuccess = () =>
+        guard(() => {
+          if (expectedUpdatedAt === null) {
+            if (request.result !== undefined) throw new Error('Experiment record already exists.');
+            store.add(input, input.id);
+            done(input);
+            return;
+          }
+          const current = ExperimentRecordSchema.parse(request.result);
+          if (current.updatedAt !== expectedUpdatedAt)
+            throw new Error('Observation changed in another window. Refresh before saving.');
+          if (current.createdAt !== input.createdAt)
+            throw new Error('Observation creation timestamp cannot change.');
+          const updatedAt = new Date(
+            Math.max(Date.now(), Date.parse(current.updatedAt) + 1),
+          ).toISOString();
+          const saved = ExperimentRecordSchema.parse({ ...input, updatedAt });
+          store.put(saved, saved.id);
+          done(saved);
+        });
+    });
+  }
+  deleteExperiment(id: string, expectedUpdatedAt: string): Promise<void> {
+    idSchema.parse(id);
+    return this.transaction(['experiments'], 'readwrite', (tx, done, guard) => {
+      const store = tx.objectStore('experiments');
+      const request = store.get(id);
+      request.onsuccess = () =>
+        guard(() => {
+          const current = ExperimentRecordSchema.parse(request.result);
+          if (current.updatedAt !== expectedUpdatedAt)
+            throw new Error('Observation changed in another window. Refresh before deleting.');
+          store.delete(id);
+          done(undefined);
+        });
+    });
   }
   loadSettings(): Promise<Settings> {
     return this.transaction(['settings'], 'readonly', (tx, done, guard) => {
