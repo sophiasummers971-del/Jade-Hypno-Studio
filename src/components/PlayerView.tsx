@@ -26,9 +26,11 @@ const initial: PlayerSnapshot = {
 export function PlayerView({
   session,
   onExit,
+  onRecordNotes,
 }: {
   session: Session;
   onExit: () => void;
+  onRecordNotes?: (durationSeconds: number) => void;
 }) {
   const audio = useMemo(
     () => new AudioEngine(new BrowserSpeechEngine(), new AudioMixer()),
@@ -196,9 +198,20 @@ export function PlayerView({
               </button>
             )}
             {snapshot.state === 'completed' && (
-              <button className="primary" onClick={exit}>
-                Exit player
-              </button>
+              <>
+                {onRecordNotes && (
+                  <button
+                    className="primary"
+                    onClick={() => {
+                      stop();
+                      onRecordNotes(Math.round(snapshot.elapsedSeconds));
+                    }}
+                  >
+                    Record Session Notes
+                  </button>
+                )}
+                <button onClick={exit}>Exit player</button>
+              </>
             )}
             {snapshot.state === 'error' && (
               <>
