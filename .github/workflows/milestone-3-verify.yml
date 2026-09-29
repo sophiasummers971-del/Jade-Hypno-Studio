@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   verify:
@@ -19,16 +19,6 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
-      - name: Normalize Milestone 3 formatting
-        run: |
-          npx prettier --write docs/architecture.md src/App.m3.test.tsx src/App.tsx src/components/GroundingMode.tsx src/components/SessionReview.test.tsx src/components/SessionReview.tsx src/domain/safetyReviewSchema.test.ts src/safety/returnNow.test.ts src/safety/returnNow.ts src/safety/reviewEngine.test.ts src/safety/reviewEngine.ts src/safety/rules.ts src/styles.css
-          if ! git diff --quiet; then
-            git config user.name "jade-hypno-studio-ci"
-            git config user.email "actions@users.noreply.github.com"
-            git add docs/architecture.md src/App.m3.test.tsx src/App.tsx src/components/GroundingMode.tsx src/components/SessionReview.test.tsx src/components/SessionReview.tsx src/domain/safetyReviewSchema.test.ts src/safety/returnNow.test.ts src/safety/returnNow.ts src/safety/reviewEngine.test.ts src/safety/reviewEngine.ts src/safety/rules.ts src/styles.css
-            git commit -m "Format Milestone 3 implementation"
-            git push origin HEAD:codex/milestone-3-safety-review
-          fi
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run format:check
