@@ -29,12 +29,12 @@ export function VisualPanel({
   session: Session;
   onChange: (session: Session) => void;
 }) {
+  const resolver = useMemo(() => new MediaResolver(), []);
   const audio = useMemo(
-    () => new AudioEngine(new BrowserSpeechEngine(), new AudioMixer()),
-    [],
+    () => new AudioEngine(new BrowserSpeechEngine(), new AudioMixer(), resolver),
+    [resolver],
   );
   const engine = useMemo(() => new VisualEngine(audio), [audio]);
-  const resolver = useMemo(() => new MediaResolver(), []);
   const [snapshot, setSnapshot] = useState(initial);
   const [media, setMedia] = useState<ResolvedMedia | null>(null);
   const [notice, setNotice] = useState('');
@@ -367,7 +367,7 @@ export function VisualPanel({
         <button
           className="primary"
           disabled={
-            !audio.speech.supported ||
+            !audio.speech.supported && !session.blocks.some((block) => block.audioSettings.narrationReference) ||
             snapshot.state === 'playing' ||
             snapshot.state === 'loading'
           }
