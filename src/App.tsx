@@ -27,6 +27,8 @@ import { GroundingMode } from './components/GroundingMode';
 import { AudioPanel } from './components/AudioPanel';
 import { VisualPanel } from './components/VisualPanel';
 import { PlayerView } from './components/PlayerView';
+import { ExperimentLab } from './components/ExperimentLab';
+import { newExperimentRecord, type ExperimentRecord } from './experiment/model';
 import { invalidateReview, scanSession } from './safety/reviewEngine';
 import { RETURN_NOW_EVENT, returnNow } from './safety/returnNow';
 import {
@@ -41,6 +43,7 @@ type View =
   | 'Session Editor'
   | 'Session Review'
   | 'Player'
+  | 'Experiment Lab'
   | 'Calm / Grounding'
   | 'Settings'
   | 'About / Safety';
@@ -67,6 +70,7 @@ export function App({
     detail: string;
   } | null>(null);
   const [status, setStatus] = useState('');
+  const [pendingExperiment, setPendingExperiment] = useState<ExperimentRecord | null>(null);
   const [reviewFocusBlockId, setReviewFocusBlockId] = useState<
     string | undefined
   >();
@@ -275,6 +279,7 @@ export function App({
               'Home',
               'Sessions',
               'New Session',
+              'Experiment Lab',
               'Settings',
               'About / Safety',
             ] as View[]
@@ -291,14 +296,14 @@ export function App({
         </nav>
         <div className="sidebar-foot">
           <span className="dot" /> Local & private
-          <p>Renderer & Player · Milestone 6</p>
+          <p>Personal Experiment Lab · Milestone 7</p>
         </div>
       </aside>
       <main aria-busy={busy}>
         <header>
           <p className="eyebrow">YOUR SPACE. YOUR CONTROL.</p>
           <div className="header-actions">
-            <span className="badge">BETA PLAYER / 06</span>
+            <span className="badge">EXPERIMENT LAB / 07</span>
             <button
               type="button"
               className="return-now"
@@ -721,6 +726,18 @@ export function App({
           <PlayerView
             session={session}
             onExit={() => setView('Session Editor')}
+            onRecordNotes={(durationSeconds) => {
+              setPendingExperiment(
+                newExperimentRecord({
+                  sessionId: session.id,
+                  sessionTitle: session.title,
+                  sessionRevision: session.updatedAt,
+                  completedAt: new Date().toISOString(),
+                  durationSeconds,
+                }),
+              );
+              setView('Experiment Lab');
+            }}
           />
         )}
         {view === 'Session Review' && session && (
@@ -733,6 +750,14 @@ export function App({
               setView('Session Editor');
             }}
             onGrounding={() => setView('Calm / Grounding')}
+          />
+        )}
+        {view === 'Experiment Lab' && (
+          <ExperimentLab
+            repo={repo}
+            sessions={list}
+            pending={pendingExperiment}
+            onPendingHandled={() => setPendingExperiment(null)}
           />
         )}
         {view === 'Calm / Grounding' && (
