@@ -42,6 +42,9 @@ export function VisualPanel({
   const input = useRef<HTMLInputElement>(null);
   const stage = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
+  const narrationAvailable =
+    audio.speech.supported ||
+    session.blocks.filter((block) => block.enabled).every((block) => Boolean(block.audioSettings.narrationReference));
   const current =
     session.blocks.find((b) => b.id === snapshot.currentBlockId) ??
     session.blocks.find((b) => b.enabled) ??
@@ -367,7 +370,7 @@ export function VisualPanel({
         <button
           className="primary"
           disabled={
-            !audio.speech.supported && !session.blocks.some((block) => block.audioSettings.narrationReference) ||
+            !narrationAvailable ||
             snapshot.state === 'playing' ||
             snapshot.state === 'loading'
           }
