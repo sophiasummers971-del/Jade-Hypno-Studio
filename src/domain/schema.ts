@@ -22,30 +22,62 @@ export const blockTypes = [
   'exit',
   'custom',
 ] as const;
+export const captionModes = [
+  'full-narration',
+  'selected-phrases',
+  'emphasis-only',
+  'none',
+] as const;
+export const transitionTypes = ['none', 'fade', 'crossfade'] as const;
+export const backgroundTypes = ['color', 'image', 'video', 'gradient'] as const;
+
 export const VoiceSettingsSchema = z
   .object({
     voiceId: text(256),
-    rate: z.number().min(0.5).max(2),
-    pitch: z.number().min(-12).max(12),
+    rate: z.number().finite().min(0.5).max(2),
+    pitch: z.number().finite().min(-12).max(12),
+    volume: level.default(1),
   })
   .strict();
 export const AudioSettingsSchema = z
-  .object({ narrationLevel: level, musicLevel: level, ambientLevel: level })
+  .object({
+    narrationLevel: level,
+    musicReference: text(4096).default(''),
+    ambientReference: text(4096).default(''),
+    musicLevel: level,
+    ambientLevel: level,
+    fadeInDuration: z.number().finite().min(0).max(300).default(0),
+    fadeOutDuration: z.number().finite().min(0).max(300).default(0),
+  })
   .strict();
 export const resolutions = ['1280x720', '1920x1080', '3840x2160'] as const;
 export const VisualSettingsSchema = z
   .object({
     resolution: z.enum(resolutions),
     backgroundColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+    mediaReference: text(4096).default(''),
+    backgroundType: z.enum(backgroundTypes).default('color'),
+    opacity: level.default(1),
+    blur: z.number().finite().min(0).max(100).default(0),
+    zoomAmount: z.number().finite().min(0).max(5).default(0),
+    pulseAmount: z.number().finite().min(0).max(5).default(0),
+    transitionType: z.enum(transitionTypes).default('none'),
   })
   .strict();
 export const CaptionSettingsSchema = z
-  .object({ enabled: z.boolean() })
+  .object({
+    enabled: z.boolean(),
+    mode: z.enum(captionModes).default('full-narration'),
+    fontSize: z.number().int().min(8).max(200).default(32),
+    alignment: z.enum(['left', 'center', 'right']).default('center'),
+    position: z.enum(['top', 'middle', 'bottom']).default('bottom'),
+    opacity: level.default(1),
+  })
   .strict();
 export const TransitionSettingsSchema = z
   .object({
-    type: z.enum(['none', 'fade']),
-    duration: z.number().min(0).max(30),
+    type: z.enum(transitionTypes),
+    duration: z.number().finite().min(0).max(30),
   })
   .strict();
 export const SafetyReviewSchema = z
@@ -69,6 +101,7 @@ export const SessionBlockSchema = z
     enabled: z.boolean(),
     narration: text(100000),
     estimatedDuration: duration,
+    manualDurationOverride: duration.nullable().default(null),
     voiceSettings: VoiceSettingsSchema,
     visualSettings: VisualSettingsSchema,
     audioSettings: AudioSettingsSchema,
@@ -88,6 +121,19 @@ export const SessionSchema = z
     updatedAt: z.string().datetime(),
     durationEstimate: duration,
     blocks: z.array(SessionBlockSchema).max(200),
+    sourceImports: z
+      .array(
+        z
+          .object({
+            id,
+            fileName: text(512),
+            originalText: text(1000000),
+            importedAt: z.string().datetime(),
+          })
+          .strict(),
+      )
+      .max(20)
+      .default([]),
     audioSettings: AudioSettingsSchema,
     visualSettings: VisualSettingsSchema,
     safetyReview: SafetyReviewSchema,
@@ -97,20 +143,9 @@ export const SessionSchema = z
   .strict()
   .superRefine((session, context) => {
     if (Date.parse(session.updatedAt) < Date.parse(session.createdAt))
-      context.addIssue({
-        code: 'custom',
-        path: ['updatedAt'],
-        message: 'Updated timestamp precedes creation timestamp',
-      });
-    if (
-      new Set(session.blocks.map((block) => block.id)).size !==
-      session.blocks.length
-    )
-      context.addIssue({
-        code: 'custom',
-        path: ['blocks'],
-        message: 'Block IDs must be unique',
-      });
+      context.addIssue({ code: 'custom', path: ['updatedAt'], message: 'Updated timestamp precedes creation timestamp' });
+    if (new Set(session.blocks.map((block) => block.id)).size !== session.blocks.length)
+      context.addIssue({ code: 'custom', path: ['blocks'], message: 'Block IDs must be unique' });
   });
 export const SettingsSchema = z
   .object({
@@ -123,6 +158,7 @@ export const SettingsSchema = z
     defaultNarrationLevel: level,
     defaultMusicLevel: level,
     defaultAmbientLevel: level,
+    wordsPerMinute: z.number().int().min(60).max(300).default(150),
   })
   .strict();
 export type Session = z.infer<typeof SessionSchema>;
@@ -146,6 +182,7 @@ export const defaultSettings: Settings = {
   defaultNarrationLevel: 0.8,
   defaultMusicLevel: 0.3,
   defaultAmbientLevel: 0.2,
+  wordsPerMinute: 150,
 };
 export function newSession(title: string, settings: Settings): Session {
   const now = new Date().toISOString();
@@ -159,6 +196,7 @@ export function newSession(title: string, settings: Settings): Session {
     updatedAt: now,
     durationEstimate: settings.defaultSessionDuration * 60,
     blocks: [],
+    sourceImports: [],
     audioSettings: {
       narrationLevel: settings.defaultNarrationLevel,
       musicLevel: settings.defaultMusicLevel,
@@ -192,14 +230,10 @@ export function parseSession(json: string): Session {
   try {
     data = JSON.parse(json);
   } catch {
-    throw new Error(
-      'This file is not valid JSON. The original file has not been changed.',
-    );
+    throw new Error('This file is not valid JSON. The original file has not been changed.');
   }
   const result = SessionSchema.safeParse(data);
   if (!result.success)
-    throw new Error(
-      `Invalid session: ${result.error.issues.map((i) => `${i.path.join('.') || 'session'}: ${i.message}`).join('; ')}`,
-    );
+    throw new Error(`Invalid session: ${result.error.issues.map((i) => `${i.path.join('.') || 'session'}: ${i.message}`).join('; ')}`);
   return result.data;
 }

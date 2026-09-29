@@ -82,6 +82,19 @@
             "minimum": 0,
             "maximum": 86400
           },
+          "manualDurationOverride": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 86400
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
           "voiceSettings": {
             "type": "object",
             "properties": {
@@ -98,6 +111,12 @@
                 "type": "number",
                 "minimum": -12,
                 "maximum": 12
+              },
+              "volume": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "default": 1
               }
             },
             "required": [
@@ -121,6 +140,54 @@
               "backgroundColor": {
                 "type": "string",
                 "pattern": "^#[0-9a-fA-F]{6}$"
+              },
+              "mediaReference": {
+                "type": "string",
+                "maxLength": 4096,
+                "default": ""
+              },
+              "backgroundType": {
+                "type": "string",
+                "enum": [
+                  "color",
+                  "image",
+                  "video",
+                  "gradient"
+                ],
+                "default": "color"
+              },
+              "opacity": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "default": 1
+              },
+              "blur": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100,
+                "default": 0
+              },
+              "zoomAmount": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 5,
+                "default": 0
+              },
+              "pulseAmount": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 5,
+                "default": 0
+              },
+              "transitionType": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "fade",
+                  "crossfade"
+                ],
+                "default": "none"
               }
             },
             "required": [
@@ -137,6 +204,16 @@
                 "minimum": 0,
                 "maximum": 1
               },
+              "musicReference": {
+                "type": "string",
+                "maxLength": 4096,
+                "default": ""
+              },
+              "ambientReference": {
+                "type": "string",
+                "maxLength": 4096,
+                "default": ""
+              },
               "musicLevel": {
                 "type": "number",
                 "minimum": 0,
@@ -146,6 +223,18 @@
                 "type": "number",
                 "minimum": 0,
                 "maximum": 1
+              },
+              "fadeInDuration": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 300,
+                "default": 0
+              },
+              "fadeOutDuration": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 300,
+                "default": 0
               }
             },
             "required": [
@@ -160,6 +249,46 @@
             "properties": {
               "enabled": {
                 "type": "boolean"
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "full-narration",
+                  "selected-phrases",
+                  "emphasis-only",
+                  "none"
+                ],
+                "default": "full-narration"
+              },
+              "fontSize": {
+                "type": "integer",
+                "minimum": 8,
+                "maximum": 200,
+                "default": 32
+              },
+              "alignment": {
+                "type": "string",
+                "enum": [
+                  "left",
+                  "center",
+                  "right"
+                ],
+                "default": "center"
+              },
+              "position": {
+                "type": "string",
+                "enum": [
+                  "top",
+                  "middle",
+                  "bottom"
+                ],
+                "default": "bottom"
+              },
+              "opacity": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "default": 1
               }
             },
             "required": [
@@ -174,7 +303,8 @@
                 "type": "string",
                 "enum": [
                   "none",
-                  "fade"
+                  "fade",
+                  "crossfade"
                 ]
               },
               "duration": {
@@ -212,6 +342,40 @@
       },
       "maxItems": 200
     },
+    "sourceImports": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "fileName": {
+            "type": "string",
+            "maxLength": 512
+          },
+          "originalText": {
+            "type": "string",
+            "maxLength": 1000000
+          },
+          "importedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "fileName",
+          "originalText",
+          "importedAt"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 20,
+      "default": []
+    },
     "audioSettings": {
       "type": "object",
       "properties": {
@@ -219,6 +383,16 @@
           "type": "number",
           "minimum": 0,
           "maximum": 1
+        },
+        "musicReference": {
+          "type": "string",
+          "maxLength": 4096,
+          "default": ""
+        },
+        "ambientReference": {
+          "type": "string",
+          "maxLength": 4096,
+          "default": ""
         },
         "musicLevel": {
           "type": "number",
@@ -229,6 +403,18 @@
           "type": "number",
           "minimum": 0,
           "maximum": 1
+        },
+        "fadeInDuration": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 300,
+          "default": 0
+        },
+        "fadeOutDuration": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 300,
+          "default": 0
         }
       },
       "required": [
@@ -252,6 +438,54 @@
         "backgroundColor": {
           "type": "string",
           "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "mediaReference": {
+          "type": "string",
+          "maxLength": 4096,
+          "default": ""
+        },
+        "backgroundType": {
+          "type": "string",
+          "enum": [
+            "color",
+            "image",
+            "video",
+            "gradient"
+          ],
+          "default": "color"
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1
+        },
+        "blur": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "default": 0
+        },
+        "zoomAmount": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 5,
+          "default": 0
+        },
+        "pulseAmount": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 5,
+          "default": 0
+        },
+        "transitionType": {
+          "type": "string",
+          "enum": [
+            "none",
+            "fade",
+            "crossfade"
+          ],
+          "default": "none"
         }
       },
       "required": [

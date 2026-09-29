@@ -8,7 +8,7 @@
 
 A private, single-user, local-first workspace for one adult to organise personalised audiovisual sessions. No medical/therapy service, accounts, backend or public hosting.
 
-**Milestone 1.1 compatibility amendment: frontend/storage COMPLETE; actual APK verification UNVERIFIED.** The old GTK/WebKit desktop blocker is not a primary acceptance requirement. This amendment does not implement Milestone 2.
+**Milestone 2 implementation branch:** structured script authoring is layered on the verified Milestone 1.1 IndexedDB/WebToApp foundation. APK packaging remains a separate on-device verification step and is not required when WebToApp is unavailable in the build environment.
 
 ## Run and build
 
@@ -27,11 +27,19 @@ The primary build is a single classic deferred JavaScript bundle with a separate
 
 For the phone steps, see **[docs/webtoapp.md](docs/webtoapp.md)**. The delivery includes a ready-built `dist/` and `webtoapp-dist.zip`; no on-phone Node installation is required when using those files.
 
-## Preserved foundation
+## Script Builder
 
-All six views remain: Home, Sessions, New Session, Session Editor, Settings, About / Safety. Create/open, title/description/mode edits, duplicate, rename, confirmed recoverable deletion, metadata and block placeholders are preserved. Autosave waits 600 ms, orders writes and never treats a failed write as saved. Save, Save as copy and confirmed Reopen saved version remain available.
+Milestone 2 keeps all six foundation views and adds structured session authoring inside Session Editor. New sessions can start from Blank Session, Relaxation, Immersive Fantasy or Adult Immersive Session structural templates. The default immersive structure contains Preflight, Arrival, Attention, Settling, Deepening, Main Fantasy, Intensification, Release, Return and Clean Exit. Templates contain structure rather than substantial canned narration, and every generated session receives independent block IDs.
 
-Settings now also debounce-save. Explicit Save settings and navigation flush remain. Backgrounding attempts to flush sessions/settings, but Android can kill a process without a final event. Wait for **Saved locally** before closing; force-stop/power loss can lose a pending draft.
+Blocks can be added, renamed, enabled/disabled, duplicated, reordered, deleted and edited. Drag-and-drop is available on desktop, while explicit **Move Up** and **Move Down** controls remain the reliable touch/keyboard path on Android. A timeline displays order, title, estimated start/end, effective duration and enabled state. Disabled blocks stay visible but do not advance active runtime.
+
+Narration duration is estimated from word count and the saved words-per-minute preference (150 WPM by default). A manual duration override can replace the estimate per block. These values are planning estimates, not frame-accurate render timings.
+
+Each block stores voice, caption, visual, audio and transition configuration only. Milestone 2 does not synthesize or render any of those settings. **PRIVATE NOTES** are a separate editor-only field from **NARRATION** and are never automatically copied into narration or captions.
+
+TXT and Markdown import uses the browser/WebView file selector or pasted text. Imported source is previewed locally before conversion. Basic heading heuristics can suggest blocks, the original source is retained inside the session for review, and the resulting blocks remain fully editable before saving. HTML is treated as text and is never executed.
+
+The Milestone 1.1 autosave pipeline remains in place: it waits 600 ms, orders writes and never treats a failed write as saved. Save, Save as copy, JSON export and confirmed Reopen saved version remain available. Settings continue to debounce-save. Backgrounding attempts to flush pending work, but Android can terminate a process without a final event, so wait for **Saved locally** before closing.
 
 ## Local storage
 
@@ -104,8 +112,8 @@ No GTK/WebKit installation or desktop build was attempted for this amendment. A 
 
 ## Explicit limits
 
-No block editor, scanner, TTS, audio/video generation engine, FFmpeg integration, hypnosis playback, AI APIs, experiment tracking, cloud sync, authentication or Google integration. SafetyReview and ExperimentMetadata remain structural fields only. Media controls on the isolated diagnostic page only test user-selected local files; nothing enters sessions.
+No safety scanner, automatic content blocking, TTS, speech synthesis, audio mixing, waveform editor, image/video rendering, FFmpeg integration, finished player, experiment tracking, AI script generation, online script library, cloud sync, authentication, scraping or remote APIs. Voice/audio/visual/caption/transition data are configuration only. SafetyReview and ExperimentMetadata remain structural fields. Media controls on the isolated diagnostic page are still capability tests, not the rendering engine.
 
 Single-user beta limits remain: 200 blocks / 4 MiB per session, no pagination, no migration engine, no automatic backup/encryption and no Trash UI. Cross-window sessions use optimistic revision conflict checks; settings are last-committed-write-wins across separate windows. Filesystem power-loss durability and IndexedDB quota/eviction behavior remain OS/browser-dependent. Real Android keyboard, Back button, process death, permissions and exported APK behavior must be tested on-device.
 
-The source/Git bundle and packaging output are delivered privately. No merge, push, public deployment or Milestone 2 work occurred.
+The project remains private/local-first. Milestone 2 does not require a backend, localhost process, cloud service or Tauri native filesystem API in production.

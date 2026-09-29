@@ -9,7 +9,6 @@ import {
 import {
   modes,
   resolutions,
-  newSession,
   parseSession,
   type Session,
   type Settings,
@@ -22,6 +21,8 @@ import {
 import { Autosave, type SaveState } from './storage/autosave';
 import { ErrorNotice, errorDetail } from './components/ErrorNotice';
 import { Modal } from './components/Modal';
+import { ScriptBuilder } from './components/ScriptBuilder';
+import { createSessionFromTemplate, type TemplateId } from './domain/scriptBuilder';
 
 type View =
   | 'Home'
@@ -45,6 +46,7 @@ export function App({
   const [session, setSession] = useState<Session | null>(null);
   const [saveState, setSaveState] = useState<SaveState>('saved');
   const [title, setTitle] = useState('');
+  const [template, setTemplate] = useState<TemplateId>('immersive-fantasy');
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<{
@@ -259,13 +261,13 @@ export function App({
         </nav>
         <div className="sidebar-foot">
           <span className="dot" /> Local & private
-          <p>Foundation · Milestone 1.1</p>
+          <p>Script Builder · Milestone 2</p>
         </div>
       </aside>
       <main aria-busy={busy}>
         <header>
           <p className="eyebrow">YOUR SPACE. YOUR CONTROL.</p>
-          <span className="badge">FOUNDATION / 01.1</span>
+          <span className="badge">SCRIPT BUILDER / 02</span>
         </header>
         {!ready && <p role="status">Opening local workspace…</p>}
         {error && <ErrorNotice {...error} dismiss={() => setError(null)} />}
@@ -456,7 +458,7 @@ export function App({
           <>
             <h1>New session</h1>
             <p className="lead">
-              A blank canvas. No generated scripts or playback.
+              Choose a structural starting point. No generated scripts or playback.
             </p>
             <form
               onSubmit={(event) => {
@@ -465,10 +467,11 @@ export function App({
                   if (!settings) throw new Error('Settings are unavailable.');
                   await flushAll();
                   const created = await repo.save(
-                    newSession(title, settings),
+                    createSessionFromTemplate(title, template, settings),
                     null,
                   );
                   setTitle('');
+                  setTemplate('immersive-fantasy');
                   openEditor(created);
                 });
               }}
@@ -484,9 +487,20 @@ export function App({
                     onChange={(event) => setTitle(event.target.value)}
                   />
                 </label>
+                <label>
+                  Structural template
+                  <select
+                    value={template}
+                    onChange={(event) => setTemplate(event.target.value as TemplateId)}
+                  >
+                    <option value="blank">Blank Session</option>
+                    <option value="relaxation">Relaxation</option>
+                    <option value="immersive-fantasy">Immersive Fantasy</option>
+                    <option value="adult-immersive">Adult Immersive Session</option>
+                  </select>
+                </label>
                 <p>
-                  Starts at {settings?.defaultSessionDuration ?? '—'} minutes
-                  using your saved defaults. Duration is an estimate.
+                  Templates create independent block structures only. They do not add generated scripts, playback, or rendering.
                 </p>
                 <button className="primary" disabled={!title.trim()}>
                   Create session
@@ -501,7 +515,7 @@ export function App({
               <div>
                 <h1>Session editor</h1>
                 <p className="lead">
-                  Shape the outline. Blocks arrive in Milestone 2.
+                  Create, structure, edit and review the complete session before rendering.
                 </p>
               </div>
               <span role="status" className={`badge save-${saveState}`}>
@@ -604,26 +618,11 @@ export function App({
                 </button>
               </div>
             </fieldset>
-            <section>
-              <h2>
-                Session outline{' '}
-                <span className="badge">{session.blocks.length} BLOCKS</span>
-              </h2>
-              {session.blocks.length ? (
-                session.blocks.map((block) => (
-                  <div className="block" key={block.id}>
-                    {block.title || block.type} ·{' '}
-                    {block.enabled ? 'Enabled' : 'Disabled'} ·{' '}
-                    {block.estimatedDuration}s
-                  </div>
-                ))
-              ) : (
-                <p>
-                  No blocks yet. This foundation stores the structure; block
-                  editing is not part of this milestone.
-                </p>
-              )}
-            </section>
+            <ScriptBuilder
+              session={session}
+              wordsPerMinute={settings?.wordsPerMinute ?? 150}
+              onChange={edit}
+            />
             <details className="metadata">
               <summary>Session metadata</summary>
               <dl>
@@ -682,6 +681,22 @@ export function App({
                           setDraftSettings({
                             ...draftSettings,
                             defaultSessionDuration: Number(event.target.value),
+                          })
+                        }
+                      />
+                    </label>
+                    <label>
+                      Words per minute estimate
+                      <input
+                        type="number"
+                        min={60}
+                        max={300}
+                        required
+                        value={draftSettings.wordsPerMinute}
+                        onChange={(event) =>
+                          setDraftSettings({
+                            ...draftSettings,
+                            wordsPerMinute: Number(event.target.value),
                           })
                         }
                       />
@@ -802,7 +817,7 @@ export function App({
               Private by design. Always under your control.
             </p>
             <section>
-              <h2>Jade Hypno Studio · 0.1.1</h2>
+              <h2>Jade Hypno Studio · 0.2.0</h2>
               <p>
                 A local-first workspace for one adult to organise personalised
                 audiovisual sessions. This is not a medical application or

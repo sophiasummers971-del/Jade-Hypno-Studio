@@ -57,6 +57,24 @@ describe('versioned session schema', () => {
     expect(session.exportSettings.captionsEnabled).toBe(false);
     expect(session.audioSettings.musicLevel).toBe(0.15);
   });
+  it('fills Milestone 2 defaults when loading a valid Milestone 1.1 session', () => {
+    const current = newSession('Legacy', defaultSettings);
+    const legacy = structuredClone(current) as Record<string, unknown>;
+    delete legacy.sourceImports;
+    const audio = legacy.audioSettings as Record<string, unknown>;
+    for (const key of ['musicReference', 'ambientReference', 'fadeInDuration', 'fadeOutDuration']) delete audio[key];
+    const visual = legacy.visualSettings as Record<string, unknown>;
+    for (const key of ['mediaReference', 'backgroundType', 'opacity', 'blur', 'zoomAmount', 'pulseAmount', 'transitionType']) delete visual[key];
+    const parsed = SessionSchema.parse(legacy);
+    expect(parsed.sourceImports).toEqual([]);
+    expect(parsed.audioSettings.musicReference).toBe('');
+    expect(parsed.visualSettings.backgroundType).toBe('color');
+  });
+  it('fills the new words-per-minute setting for Milestone 1.1 settings', () => {
+    const legacy = { ...defaultSettings } as Record<string, unknown>;
+    delete legacy.wordsPerMinute;
+    expect(SettingsSchema.parse(legacy).wordsPerMinute).toBe(150);
+  });
   it('rejects invalid settings and unknown settings schema versions', () => {
     expect(
       SettingsSchema.safeParse({ ...defaultSettings, defaultMusicLevel: 2 })

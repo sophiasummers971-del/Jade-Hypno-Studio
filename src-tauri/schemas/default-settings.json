@@ -7,5 +7,6 @@
   "captionsEnabled": true,
   "defaultNarrationLevel": 0.8,
   "defaultMusicLevel": 0.3,
-  "defaultAmbientLevel": 0.2
+  "defaultAmbientLevel": 0.2,
+  "wordsPerMinute": 150
 }

@@ -1,4 +1,4 @@
-# Milestone 1.1 architecture
+# Milestone 2 architecture
 
 **Primary: private Android APK through WebToApp. Storage: IndexedDB. Optional desktop: Tauri.**
 
@@ -66,9 +66,27 @@ A developer can instantiate `IndexedDBRepository` for the same store and call `r
 
 Data is scoped to the WebView origin/profile and is not encrypted. Quota/eviction, package identity, signing key and origin stability matter. JSON backups should be kept outside app storage. Imported text is rendered through React, never executed as code. There are no cloud/network APIs or session telemetry. Generated APK shell settings must be checked separately.
 
+## Script Builder domain layer
+
+`src/domain/scriptBuilder.ts` is platform-agnostic. It owns structural templates, block creation/copy/reorder/delete operations, word counting, estimated duration, active timeline calculation and local TXT/Markdown heading heuristics. It depends on the validated domain schema and cryptographic UUID helper, not on Tauri, IndexedDB, filesystem APIs or network services.
+
+`src/components/ScriptBuilder.tsx` is the editor surface. The block list doubles as a planning timeline; drag-and-drop is optional and explicit Move Up/Move Down buttons remain available for touch and keyboard use. The center pane separates narration from private notes. The inspector stores voice, caption, visual, audio and transition configuration without invoking any rendering implementation.
+
+## Milestone 2 schema compatibility
+
+Schema version remains 1 because Milestone 2 extends the existing version with defaulted fields rather than changing persisted identity or storage semantics. Existing Milestone 1.1 records can be parsed with defaults for block voice volume, caption options, visual/audio configuration, manual duration override, session source imports and settings words-per-minute. Generated JSON schemas for the optional native adapter mirror those optional/defaulted properties, preserving older files.
+
+Session blocks still enforce unique IDs at the session schema boundary. Numeric ranges constrain volume/opacity to 0–1, duration values to non-negative bounds, caption modes and transition types to known enums, and block types to the established type list. Invalid editor values cannot pass `SessionSchema.parse` into repository writes.
+
+Private notes remain a distinct `notes` property. No helper in the script-builder layer derives narration/captions from notes, and serialization tests assert the two properties survive independently.
+
+## Local script import
+
+TXT/Markdown uses `<input type=file>` plus `FileReader`, with paste as an alternate path. The first state is an `ImportedTextDraft`; nothing is inserted into the session until explicit confirmation. Heading recognition is intentionally basic and reversible. The original local text plus filename/import timestamp is stored in `sourceImports`, while generated blocks remain ordinary editable blocks. React renders all imported material as text; no HTML execution, scraping or remote retrieval exists.
+
 ## Future boundary
 
-No Milestone 2 implementation. The original domain schema and placeholder blocks remain intact. Later milestones can depend on the repository contracts without binding their logic to a desktop command or Android bridge.
+Milestone 3+ remains outside this branch. There is no scanner, TTS, media synthesis, mixer, waveform editor, renderer, FFmpeg path, finished player, experiment engine, cloud service, AI generation or online library. Later work can consume the structured session model without changing the repository/platform boundary.
 
 ## Primary references
 

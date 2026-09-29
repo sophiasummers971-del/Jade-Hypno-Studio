@@ -43,6 +43,12 @@
       "type": "number",
       "minimum": 0,
       "maximum": 1
+    },
+    "wordsPerMinute": {
+      "type": "integer",
+      "minimum": 60,
+      "maximum": 300,
+      "default": 150
     }
   },
   "required": [
