@@ -13,7 +13,15 @@ export const ratingKeys = [
 ] as const;
 const rating = z.number().int().min(1).max(5).nullable();
 export const ExperimentRatingsSchema = z
-  .object(Object.fromEntries(ratingKeys.map((key) => [key, rating])) as Record<(typeof ratingKeys)[number], typeof rating>)
+  .object({
+    absorption: rating,
+    relaxation: rating,
+    focus: rating,
+    immersion: rating,
+    distraction: rating,
+    comfort: rating,
+    enjoyment: rating,
+  })
   .strict();
 export const ExperimentRecordSchema = z
   .object({
