@@ -63,7 +63,9 @@ export function App({
     detail: string;
   } | null>(null);
   const [status, setStatus] = useState('');
-  const [reviewFocusBlockId, setReviewFocusBlockId] = useState<string | undefined>();
+  const [reviewFocusBlockId, setReviewFocusBlockId] = useState<
+    string | undefined
+  >();
   const [action, setAction] = useState<{
     type: 'rename' | 'delete' | 'reopen';
     session: Session;
@@ -895,7 +897,8 @@ export function App({
               <p>
                 This build adds a local, rules-based pre-render review layer to
                 session structure and local data. It does not play hypnosis,
-                generate scripts, connect to AI or voice services, or render media.
+                generate scripts, connect to AI or voice services, or render
+                media.
               </p>
             </section>
             <section>
@@ -916,9 +919,9 @@ export function App({
               <h2>Review is not a guarantee</h2>
               <p>
                 Scanner matches can miss context or create false positives. They
-                are prompts for adult review, not diagnosis, therapy, censorship,
-                or a guarantee of psychological safety. The scanner never sends
-                scripts off-device and never silently rewrites them.
+                are prompts for adult review, not diagnosis, therapy,
+                censorship, or a guarantee of psychological safety. The scanner
+                never sends scripts off-device and never silently rewrites them.
               </p>
             </section>
             <section>

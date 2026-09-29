@@ -23,7 +23,8 @@ export const reviewRules: readonly ReviewRule[] = [
   {
     id: 'choice-loss',
     category: 'loss-of-choice',
-    description: 'Language that may remove or reduce the user’s ability to stop or choose.',
+    description:
+      'Language that may remove or reduce the user’s ability to stop or choose.',
     severity: 'required-review',
     searchPatterns: [
       /\b(?:cannot|can't|unable to)\s+(?:stop|end|leave|pause)\s+(?:this\s+|the\s+)?(?:session|experience|process|sequence)\b/giu,
@@ -32,8 +33,10 @@ export const reviewRules: readonly ReviewRule[] = [
       /\bhave\s+no\s+choice\b/giu,
       /\b(?:are\s+)?forced\s+to\s+continue\b/giu,
     ],
-    explanation: 'This wording may imply that stopping or choosing differently is unavailable.',
-    remediation: 'Review whether the wording preserves voluntary choice and an immediate ability to stop.',
+    explanation:
+      'This wording may imply that stopping or choosing differently is unavailable.',
+    remediation:
+      'Review whether the wording preserves voluntary choice and an immediate ability to stop.',
   },
   {
     id: 'post-session-command',
@@ -47,8 +50,10 @@ export const reviewRules: readonly ReviewRule[] = [
       /\bwhenever\s+you\s+(?:hear|see|feel|notice)\b/giu,
       /\btomorrow\s+(?:you\s+)?(?:must|have\s+to)\b/giu,
     ],
-    explanation: 'The phrase may describe an instruction intended to remain active after the session.',
-    remediation: 'Confirm that any post-session wording is deliberate, bounded, voluntary, and easy to disregard.',
+    explanation:
+      'The phrase may describe an instruction intended to remain active after the session.',
+    remediation:
+      'Confirm that any post-session wording is deliberate, bounded, voluntary, and easy to disregard.',
   },
   {
     id: 'memory-interference',
@@ -61,13 +66,16 @@ export const reviewRules: readonly ReviewRule[] = [
       /\b(?:cannot|can't|unable to)\s+remember\b/giu,
       /\bamnesia\b/giu,
     ],
-    explanation: 'This wording may encourage forgetting, amnesia, or deliberate memory interference.',
-    remediation: 'Review whether memory interference is intended and remove it if clear recall should remain available.',
+    explanation:
+      'This wording may encourage forgetting, amnesia, or deliberate memory interference.',
+    remediation:
+      'Review whether memory interference is intended and remove it if clear recall should remain available.',
   },
   {
     id: 'reality-confusion',
     category: 'reality-confusion',
-    description: 'Assertions that may blur fantasy content with external reality.',
+    description:
+      'Assertions that may blur fantasy content with external reality.',
     severity: 'required-review',
     searchPatterns: [
       /\bnothing\s+around\s+you\s+is\s+real\b/giu,
@@ -76,13 +84,16 @@ export const reviewRules: readonly ReviewRule[] = [
       /\bforget\s+where\s+you\s+are\b/giu,
       /\bthe\s+real\s+world\s+does\s+not\s+exist\b/giu,
     ],
-    explanation: 'This is phrased as an assertion about external reality rather than ordinary imaginative framing.',
-    remediation: 'Prefer clearly framed imagination or fantasy language when describing fictional experiences.',
+    explanation:
+      'This is phrased as an assertion about external reality rather than ordinary imaginative framing.',
+    remediation:
+      'Prefer clearly framed imagination or fantasy language when describing fictional experiences.',
   },
   {
     id: 'dangerous-physical',
     category: 'dangerous-physical-activity',
-    description: 'Obvious physical activities that require full awareness or may create bodily risk.',
+    description:
+      'Obvious physical activities that require full awareness or may create bodily risk.',
     severity: 'required-review',
     searchPatterns: [
       /\b(?:drive|driving)\b/giu,
@@ -94,33 +105,40 @@ export const reviewRules: readonly ReviewRule[] = [
       /\b(?:lose|loss\s+of)\s+consciousness\b|\bpass\s+out\b/giu,
       /\b(?:dangerous|tight|forced)\s+restraint\b/giu,
     ],
-    explanation: 'The phrase references an activity where reduced attention or deliberate physical risk may be unsafe.',
-    remediation: 'Review the context and remove instructions that require impaired awareness or hazardous physical action.',
+    explanation:
+      'The phrase references an activity where reduced attention or deliberate physical risk may be unsafe.',
+    remediation:
+      'Review the context and remove instructions that require impaired awareness or hazardous physical action.',
   },
   {
     id: 'intoxication',
     category: 'intoxication',
-    description: 'Encouragement to combine an immersive session with intoxication or impairment.',
+    description:
+      'Encouragement to combine an immersive session with intoxication or impairment.',
     severity: 'required-review',
     searchPatterns: [
       /\b(?:combine|pair|use|start|run|listen)\b[^.!?\n]{0,60}\b(?:alcohol|recreational\s+drugs?|intoxicants?|intoxicated|drunk|high)\b/giu,
       /\b(?:alcohol|recreational\s+drugs?|intoxicants?|intoxicated|drunk|high)\b[^.!?\n]{0,60}\b(?:session|immersive|hypno)\b/giu,
     ],
-    explanation: 'This wording may encourage using the session while impaired by alcohol, recreational drugs, or another intoxicant.',
+    explanation:
+      'This wording may encourage using the session while impaired by alcohol, recreational drugs, or another intoxicant.',
     remediation: 'Keep immersive use separate from intoxication or impairment.',
   },
   {
     id: 'self-harm',
     category: 'self-harm',
-    description: 'Language involving suicide, self-injury, or intentionally harmful bodily instructions.',
+    description:
+      'Language involving suicide, self-injury, or intentionally harmful bodily instructions.',
     severity: 'required-review',
     searchPatterns: [
       /\bsuicid(?:e|al)\b/giu,
       /\bself[-\s]?(?:harm|injur(?:y|e))\b/giu,
       /\b(?:intentionally|deliberately)\s+(?:hurt|harm|injure)\s+yourself\b/giu,
     ],
-    explanation: 'This content references self-harm, suicide, or deliberate bodily injury and requires direct review.',
-    remediation: 'Do not proceed with suggestion-heavy playback while this finding is unresolved.',
+    explanation:
+      'This content references self-harm, suicide, or deliberate bodily injury and requires direct review.',
+    remediation:
+      'Do not proceed with suggestion-heavy playback while this finding is unresolved.',
   },
 ] as const;
 

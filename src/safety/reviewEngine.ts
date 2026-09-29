@@ -3,7 +3,13 @@ import { reviewRules, type ReviewSeverity } from './rules';
 
 export const SCANNER_VERSION = '1.0.0';
 
-function findingId(ruleId: string, blockId: string, start: number, end: number, text: string) {
+function findingId(
+  ruleId: string,
+  blockId: string,
+  start: number,
+  end: number,
+  text: string,
+) {
   let hash = 2166136261;
   const value = `${ruleId}|${blockId}|${start}|${end}|${text}`;
   for (let index = 0; index < value.length; index += 1) {
@@ -24,14 +30,19 @@ const structuralDefinitions: ReadonlyArray<{
     id: 'preflight',
     label: 'Preflight',
     severity: 'warning',
-    test: (session) => session.blocks.some((block) => block.enabled && block.type === 'preflight'),
-    explanation: 'An enabled preflight block gives the user a place to confirm ordinary readiness before future playback.',
+    test: (session) =>
+      session.blocks.some(
+        (block) => block.enabled && block.type === 'preflight',
+      ),
+    explanation:
+      'An enabled preflight block gives the user a place to confirm ordinary readiness before future playback.',
   },
   {
     id: 'arrival',
     label: 'Opening / arrival',
     severity: 'info',
-    test: (session) => session.blocks.some((block) => block.enabled && block.type === 'arrival'),
+    test: (session) =>
+      session.blocks.some((block) => block.enabled && block.type === 'arrival'),
     explanation: 'An enabled arrival block provides a clear opening stage.',
   },
   {
@@ -47,25 +58,32 @@ const structuralDefinitions: ReadonlyArray<{
             `${block.title}\n${block.narration}`,
           ),
       ),
-    explanation: 'No clear stop reminder was found in an enabled preflight or arrival block.',
+    explanation:
+      'No clear stop reminder was found in an enabled preflight or arrival block.',
   },
   {
     id: 'return',
     label: 'Return',
     severity: 'required-review',
-    test: (session) => session.blocks.some((block) => block.enabled && block.type === 'return'),
-    explanation: 'An enabled Return block is structurally required for immersive session review.',
+    test: (session) =>
+      session.blocks.some((block) => block.enabled && block.type === 'return'),
+    explanation:
+      'An enabled Return block is structurally required for immersive session review.',
   },
   {
     id: 'clean-exit',
     label: 'Clean Exit',
     severity: 'required-review',
-    test: (session) => session.blocks.some((block) => block.enabled && block.type === 'exit'),
-    explanation: 'An enabled Clean Exit block is structurally required for immersive session review.',
+    test: (session) =>
+      session.blocks.some((block) => block.enabled && block.type === 'exit'),
+    explanation:
+      'An enabled Clean Exit block is structurally required for immersive session review.',
   },
 ];
 
-export function structuralChecks(session: Session): SafetyReview['structuralChecks'] {
+export function structuralChecks(
+  session: Session,
+): SafetyReview['structuralChecks'] {
   return structuralDefinitions.map((definition) => ({
     id: definition.id,
     label: definition.label,
@@ -89,7 +107,13 @@ export function scanSession(
           if (match.index === undefined || !match[0]) continue;
           const startOffset = match.index;
           const endOffset = startOffset + match[0].length;
-          const id = findingId(rule.id, block.id, startOffset, endOffset, match[0]);
+          const id = findingId(
+            rule.id,
+            block.id,
+            startOffset,
+            endOffset,
+            match[0],
+          );
           const old = previous.findings.find((finding) => finding.id === id);
           current.push({
             id,
@@ -130,7 +154,8 @@ export function scanSession(
   const unresolvedCount =
     current.filter((finding) => finding.status === 'unresolved').length +
     checks.filter(
-      (check) => check.status === 'missing' && check.severity === 'required-review',
+      (check) =>
+        check.status === 'missing' && check.severity === 'required-review',
     ).length;
 
   return {
@@ -161,9 +186,12 @@ export function updateFinding(
       : finding,
   );
   const unresolvedCount =
-    findings.filter((finding) => finding.present && finding.status === 'unresolved').length +
+    findings.filter(
+      (finding) => finding.present && finding.status === 'unresolved',
+    ).length +
     review.structuralChecks.filter(
-      (check) => check.status === 'missing' && check.severity === 'required-review',
+      (check) =>
+        check.status === 'missing' && check.severity === 'required-review',
     ).length;
   return {
     ...review,
@@ -179,9 +207,14 @@ export function canCompleteReview(review: SafetyReview): boolean {
   return Boolean(review.lastScannedAt) && review.unresolvedCount === 0;
 }
 
-export function completeReview(review: SafetyReview, now = new Date()): SafetyReview {
+export function completeReview(
+  review: SafetyReview,
+  now = new Date(),
+): SafetyReview {
   if (!canCompleteReview(review)) {
-    throw new Error('Resolve or review required findings before completing review.');
+    throw new Error(
+      'Resolve or review required findings before completing review.',
+    );
   }
   return {
     ...review,

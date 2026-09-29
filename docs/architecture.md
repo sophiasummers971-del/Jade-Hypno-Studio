@@ -95,7 +95,6 @@ Milestone 3+ remains outside this branch. There is no scanner, TTS, media synthe
 - WebToApp Frontend: <https://shiaho777.github.io/web-to-app/guide/app-types/frontend>
 - WebToApp app types (file protocol/optional localhost): <https://shiaho777.github.io/web-to-app/guide/app-types/>
 
-
 ## Milestone 3: local safety and review layer
 
 The primary Android/WebToApp architecture remains unchanged: React + TypeScript + Vite uses the platform repository abstraction and IndexedDB for the production web build. Milestone 3 adds only local domain/UI modules above that boundary.

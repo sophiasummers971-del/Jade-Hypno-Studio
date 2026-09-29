@@ -9,8 +9,9 @@ import {
 describe('Milestone 3 review metadata contract', () => {
   it('starts sessions with versioned empty review metadata', () => {
     const session = newSession('Review me', defaultSettings);
-    const review = (session as Session & { safetyReview: Record<string, unknown> })
-      .safetyReview;
+    const review = (
+      session as Session & { safetyReview: Record<string, unknown> }
+    ).safetyReview;
     expect(review.scannerVersion).toBe('');
     expect(review.findings).toEqual([]);
     expect(review.structuralChecks).toEqual([]);

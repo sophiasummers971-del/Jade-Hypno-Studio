@@ -29,10 +29,12 @@ export async function returnNow(): Promise<void> {
   window.dispatchEvent(new CustomEvent(RETURN_NOW_EVENT));
   await call(hooks.stopNarration);
   await call(hooks.stopActiveMedia);
-  document.querySelectorAll<HTMLMediaElement>('audio, video').forEach((media) => {
-    media.pause();
-    media.currentTime = 0;
-  });
+  document
+    .querySelectorAll<HTMLMediaElement>('audio, video')
+    .forEach((media) => {
+      media.pause();
+      media.currentTime = 0;
+    });
   await call(hooks.stopVisualEffects);
   await call(hooks.fadeOrStopAudio);
   if (document.fullscreenElement && document.exitFullscreen) {

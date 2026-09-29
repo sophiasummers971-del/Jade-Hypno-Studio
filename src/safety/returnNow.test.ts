@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { RETURN_NOW_ACTION, registerReturnNowHooks, returnNow } from './returnNow';
+import {
+  RETURN_NOW_ACTION,
+  registerReturnNowHooks,
+  returnNow,
+} from './returnNow';
 
 describe('RETURN NOW contract', () => {
   afterEach(() => {
@@ -13,18 +17,34 @@ describe('RETURN NOW contract', () => {
     const pause = vi.spyOn(media, 'pause').mockImplementation(() => undefined);
     document.body.append(media);
     registerReturnNowHooks({
-      stopNarration: () => { order.push('narration'); },
-      stopActiveMedia: () => { order.push('media'); },
-      stopVisualEffects: () => { order.push('visuals'); },
-      fadeOrStopAudio: () => { order.push('audio'); },
-      clearTemporarySessionState: () => { order.push('clear'); },
+      stopNarration: () => {
+        order.push('narration');
+      },
+      stopActiveMedia: () => {
+        order.push('media');
+      },
+      stopVisualEffects: () => {
+        order.push('visuals');
+      },
+      fadeOrStopAudio: () => {
+        order.push('audio');
+      },
+      clearTemporarySessionState: () => {
+        order.push('clear');
+      },
     });
-    const hostileSessionData = { returnNow: false, RETURN_NOW_ACTION: 'disabled' };
+    const hostileSessionData = {
+      returnNow: false,
+      RETURN_NOW_ACTION: 'disabled',
+    };
     expect(hostileSessionData.returnNow).toBe(false);
     await returnNow();
     expect(order).toEqual(['narration', 'media', 'visuals', 'audio', 'clear']);
     expect(pause).toHaveBeenCalled();
-    expect(RETURN_NOW_ACTION).toEqual({ id: 'return-now', label: 'RETURN NOW' });
+    expect(RETURN_NOW_ACTION).toEqual({
+      id: 'return-now',
+      label: 'RETURN NOW',
+    });
     expect(Object.isFrozen(RETURN_NOW_ACTION)).toBe(true);
   });
 });
