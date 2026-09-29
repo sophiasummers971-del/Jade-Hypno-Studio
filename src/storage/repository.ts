@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { ExperimentRecord } from '../experiment/model';
 import {
   SessionSchema,
   type Session,
@@ -16,11 +17,16 @@ export interface SessionRepository {
   save(session: Session, expectedUpdatedAt: string | null): Promise<Session>;
   trash(id: string, expectedUpdatedAt: string): Promise<void>;
 }
+export interface ExperimentRepository {
+  listExperiments(sessionId?: string): Promise<ExperimentRecord[]>;
+  saveExperiment(record: ExperimentRecord, expectedUpdatedAt: string | null): Promise<ExperimentRecord>;
+  deleteExperiment(id: string, expectedUpdatedAt: string): Promise<void>;
+}
 export interface SettingsRepository {
   loadSettings(): Promise<Settings>;
   saveSettings(settings: Settings): Promise<Settings>;
 }
-export interface Repository extends SessionRepository, SettingsRepository {}
+export interface Repository extends SessionRepository, SettingsRepository, ExperimentRepository {}
 
 export async function duplicateSession(
   repo: SessionRepository,
