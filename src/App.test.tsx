@@ -116,10 +116,13 @@ describe('foundation views', () => {
     expect(await screen.findByText('broken.json')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Valid' })).toBeInTheDocument();
   });
-  it('does not present browser preview as a saved desktop workspace', () => {
+  it('ordinary web mode opens IndexedDB without Tauri and enables creation', async () => {
     render(<App />);
-    expect(screen.getByText(/Browser preview only/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'New session' })).toBeDisabled();
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'New session' })).toBeEnabled(),
+    );
+    expect(screen.getByText(/IndexedDB on this device/)).toBeInTheDocument();
+    expect(screen.queryByText(/Browser preview only/)).not.toBeInTheDocument();
   });
 });
 
@@ -172,4 +175,31 @@ it('offers confirmed recovery from a save conflict without trapping the editor',
   expect(
     (await repo.list()).sessions.find((s) => s.id !== original.id)?.description,
   ).toBe('My unsaved edits');
+});
+
+it('keeps newer settings edits when an earlier save is still in flight', async () => {
+  const { repo, user } = await start();
+  await user.click(screen.getByRole('button', { name: 'Settings' }));
+  let release!: () => void;
+  const original = repo.saveSettings.bind(repo);
+  vi.spyOn(repo, 'saveSettings').mockImplementationOnce(async (settings) => {
+    await new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    return original(settings);
+  });
+  const input = screen.getByLabelText('TTS voice identifier (placeholder)');
+  await user.type(input, 'first');
+  await waitFor(() => expect(repo.saveSettings).toHaveBeenCalledOnce(), {
+    timeout: 1500,
+  });
+  await user.type(input, '-newer');
+  release();
+  await waitFor(() =>
+    expect(
+      screen.getByText('Settings saved', { exact: true }),
+    ).toBeInTheDocument(),
+  );
+  expect(input).toHaveValue('first-newer');
+  expect((await repo.loadSettings()).defaultVoiceId).toBe('first-newer');
 });

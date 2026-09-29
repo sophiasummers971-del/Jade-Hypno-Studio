@@ -1,6 +1,6 @@
 {
   "name": "jade-hypno-studio",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "engines": {
@@ -20,7 +20,11 @@
     "desktop:build": "tauri build",
     "schema:generate": "node --import tsx scripts/generate-schema.ts",
     "schema:check": "node --import tsx scripts/generate-schema.ts --check",
-    "test:native": "cargo test --manifest-path src-tauri/Cargo.toml --no-default-features"
+    "test:native": "cargo test --manifest-path src-tauri/Cargo.toml --no-default-features",
+    "dev:desktop-ui": "vite --mode tauri --host 127.0.0.1",
+    "build:desktop-ui": "npm run typecheck && vite build --mode tauri",
+    "test:e2e": "playwright test",
+    "check:dist": "node scripts/check-dist.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.8.0",
@@ -30,9 +34,10 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.34.0",
+    "@playwright/test": "^1.56.1",
     "@tauri-apps/cli": "^2.8.0",
-    "@testing-library/react": "^16.3.0",
     "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
     "@types/node": "^22.18.0",
     "@types/react": "^19.1.12",
@@ -40,6 +45,7 @@
     "@vitejs/plugin-react": "^4.7.0",
     "eslint": "^9.34.0",
     "eslint-plugin-react-hooks": "^5.2.0",
+    "fake-indexeddb": "^6.2.5",
     "globals": "^16.3.0",
     "jsdom": "^26.1.0",
     "prettier": "^3.6.2",

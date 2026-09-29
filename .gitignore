@@ -11,3 +11,7 @@ sessions/
 Trash/
 settings.json
 *.tmp
+
+dist-tauri/
+test-results/
+playwright-report/

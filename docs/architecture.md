@@ -1,67 +1,78 @@
-# Foundation architecture
+# Milestone 1.1 architecture
 
-## Frontend
+**Primary: private Android APK through WebToApp. Storage: IndexedDB. Optional desktop: Tauri.**
 
-`src/App.tsx` owns the six-view shell, current session, preferences, visible operation feedback and action confirmation. Navigation is explicit and local; no remote routing service exists. `src/components` contains error and keyboard-contained modal boundaries. Native file access is not available to view components directly: they use a typed `Repository` interface.
+## Findings before modification
 
-`src/domain/schema.ts` is the authoritative TypeScript model and Zod runtime validation. All required Session and SessionBlock fields and supporting settings types exist. Durations are seconds except the settings form's default duration in minutes. Levels are normalized 0–1. Timestamps are UTC ISO strings. UUIDs are canonical lowercase. Strings, block counts and numerical ranges are bounded; objects are strict to avoid silently stripping future fields.
+At baseline `7b3e5b58dd21813eeb9b5053029ced845e20136f`:
 
-`src/storage/repository.ts` implements the production repository using Tauri `invoke`. Responses are validated too. Test-only memory persistence lives under `src/test`; production has no browser persistence fallback.
+- `src/storage/repository.ts` combined the repository contract with six Tauri `invoke` calls: list/load/save/trash session and load/save settings.
+- `src/App.tsx` imported `isTauri` and `getCurrentWindow`, blocked ordinary-browser startup and registered native close callbacks directly.
+- `src/App.close.test.tsx` mocked Tauri to test window destruction after saving.
+- Autosave already depended on the repository interface, so its debounce/revision/write-ordering logic could be retained.
+- Settings flowed through the same repository but relied on explicit save/navigation/normal close. That needed backgrounding support and ordered settings saves for mobile.
+- Recoverable deletion lived in the Rust store as a rename to Trash. Safe writes, conflict checks, malformed-file preservation and directory assumptions were native-only.
+- Vite used root-based assets; the original browser preview had no persistence. UUID creation called secure-context-only `randomUUID`.
 
-## Validation and schema evolution
+## Small coherent refactor
 
-`scripts/generate-schema.ts` derives Draft-7 JSON schemas and default settings from Zod for the Rust store. They are checked in under `src-tauri/schemas`. `schema:check` checks drift. Rust adds equivalent cross-field checks for chronological timestamps and unique block IDs, which JSON Schema cannot express here. It also checks that the session ID matches the filename.
+`SessionRepository` holds `list`, `load`, `save`, and `trash`. `SettingsRepository` holds `loadSettings` and `saveSettings`. `Repository` composes them for the shell. Existing names were kept to avoid rewriting every view. Create is `save(session, null)`, updates use `save(session, expectedUpdatedAt)`, duplicate uses the existing domain copy helper and create, and rename is a validated update. Autosave now needs only `SessionRepository`.
 
-Both session and settings documents require `schemaVersion: 1`. Unsupported versions, malformed JSON, invalid fields and oversized files return errors. They are never silently migrated or overwritten. A future explicit migration layer belongs outside this milestone.
+`src/storage/adapters/indexeddb.ts` implements the primary adapter. The unchanged six invoke wrappers moved into `src/storage/adapters/tauri.ts`. UI code has no direct Tauri imports or command names. Platform lifecycle hooks have their own contract in `src/platform/contracts.ts`.
 
-## Native boundary
+Vite selects `@platform` at build time: ordinary builds use `src/platform/web.ts`; optional `--mode tauri` uses `src/platform/tauri.ts`. There is no user-agent detection, runtime guessing or dynamic Tauri import in the default output. The native Rust store remains untouched. Build output directories are separated.
 
-`src-tauri/src/main.rs` registers exactly six commands:
+## IndexedDB transaction model
 
-| Command         | Input                                            | Output                                  |
-| --------------- | ------------------------------------------------ | --------------------------------------- |
-| `list_sessions` | none                                             | Valid sessions and per-file diagnostics |
-| `load_session`  | UUID                                             | Validated session                       |
-| `save_session`  | Session + expected timestamp, or null for create | Saved session with native timestamp     |
-| `trash_session` | UUID + expected timestamp                        | Success or error                        |
-| `load_settings` | none                                             | Validated settings or built-in defaults |
-| `save_settings` | Settings                                         | Validated saved settings                |
+Database and stores are described in the README. Native IndexedDB is used; fake-indexeddb is test-only. Connection upgrades create the three version-1 object stores. Version-change closes the old connection; blocked upgrades return readable errors. There is no data migration or destructive upgrade code.
 
-Native code alone resolves `app_data_dir`. No IPC path, arbitrary command execution, shell, HTTP or broad filesystem plugin exists. `capabilities/main.json` permits only those commands and minimal event/window close operations for the local main window. `build.rs` declares application commands so generated permissions can restrict them. Production CSP blocks remote sources and remote fetches.
+Operations resolve only at `IDBTransaction.oncomplete`. Request success is not treated as commit success. Validation exceptions abort the transaction. Browser request errors retain their default abort behavior. Quota errors surface an explicit unsaved-data warning.
 
-An application state mutex serializes all commands. An OS advisory file lock excludes a second application instance. Store initialization errors are retained and returned to the UI by commands instead of silently switching stores. The Tauri webview itself remains a required platform dependency.
+The save transaction reads and validates the existing record before any update. A create checks both active and trash IDs and uses add, not put. An update compares `updatedAt`, keeps `createdAt` immutable and generates a strictly increasing UTC millisecond timestamp. Two connections racing with the same old timestamp cannot both win. List returns valid sessions and separate corrupt-record diagnostics; no record is rewritten during read.
 
-## Storage and durability
+Trash deletion performs add-to-trash and delete-from-sessions in one transaction. A trash collision or write error rolls the entire operation back. Restore performs add-to-active and delete-from-trash in one transaction; an active collision preserves both records. There is no ordinary permanent-delete path.
 
-`src-tauri/src/lib.rs` is independently testable without the desktop GUI feature. It uses bounded reads, JSON Schema validation, UUID-derived paths, symlink rejection for managed paths, and Unix 0700 data directories. Temporary files use restricted creation permissions (0600 on Unix). This is not a sandbox against a hostile process running as the same OS user; path checks and locks assume a trusted single-user environment.
+Settings are validated on read/write. Only an absent settings record uses defaults; a corrupt record is never silently replaced. The UI serializes/debounces settings writes and preserves edits made while an earlier save is in flight. Separate app windows still use last-committed-write-wins for settings; this is not a multi-user synchronization layer.
 
-Creates use exclusive persistence so they cannot overwrite an existing ID. Updates first validate the existing document and compare `updatedAt`; `createdAt` remains immutable. Native `updatedAt` increases monotonically for that session. Atomic replacement uses a same-directory temporary file, writes and `sync_all`, then `tempfile::persist`. Unix directory sync confirms rename durability. A failure after replacement but before directory sync is explicitly reported as uncertain durability; reopen/copy is required rather than assuming the old version is still on disk.
+## Autosave and lifecycle
 
-Deletion is a rename into Trash with a unique suffix, followed by Unix directory syncing. The app never purges Trash. Malformed files appear as separate list diagnostics and remain available for manual recovery.
+Existing session revision-based 600 ms autosave remains. Explicit Save, Save as copy, navigation flush, failure feedback, conflict recovery and the pending-write barrier on reopen are preserved. UUID generation uses cryptographic `getRandomValues` with v4 bits, so it does not require `randomUUID` availability. There is no insecure Math.random fallback.
 
-Settings use the same validation and atomic-write path. A corrupt existing settings file is not overwritten by defaults. No filesystem operation uses the export-directory preference.
+The injected web lifecycle attempts a flush on `visibilitychange` to hidden and `pagehide`. `beforeunload` warns where the host supports it. These events cannot guarantee a final mobile save: Android process kill can happen without them. No async unload guarantee is claimed. Tauri's optional lifecycle retains its original close-and-save barrier separately from React views.
 
-## Autosave and operation ordering
+## JSON portability
 
-`Autosave` tracks edit revision and acknowledged revision. It debounces for 600 ms, permits one in-flight write, and drains newer edits after that write. A completion acknowledges only the revision actually persisted. It updates the optimistic timestamp from the native response. Errors keep the draft dirty and surface a retry message; there is no infinite retry loop.
+`src/storage/portable.ts` validates serialization, limits input/output size, reads user-selected files with FileReader and requests downloads through local Blob URLs. Object URLs are revoked after the download handoff. No upload or arbitrary filesystem API exists.
 
-Explicit Save flushes the queue. Navigation and native normal-close handling wait for both session and settings writes; a failure blocks the action. Force-kill cannot be intercepted. Reopen discards only after confirmation, cancels scheduled autosave, waits for an already-running atomic write to settle, then reads disk. Save as copy uses a new UUID and leaves the original draft untouched. All UI-triggered operations use a shared busy guard to prevent duplicate submits and conflicting transitions.
+Imports validate before invoking persistence and always assign new session identity/timestamps. Unknown versions and malformed data are rejected. Export serializes the current valid draft, enabling rescue even if local persistence fails. File-download completion is owned by the browser/WebView host and cannot be truthfully reported by the frontend. UI wording reflects that distinction.
 
-## Errors and diagnostics
+Optional whole-library export was intentionally omitted from this focused refactor; session export does not contain application settings or Trash. There is no bulk import, migration or hidden overwrite logic.
 
-UI notices contain a friendly summary and expandable technical details. No primary-UI stack traces and no remote logging. Native validation errors report field paths, not the personal contents of a rejected field. Read errors identify malformed line/column without copying the file. A React error boundary catches render failures. Async application operations are caught at the caller. Full native launch/close behavior still needs verification on a supported desktop.
+## Static/offline packaging
 
-## Test boundary
+`base: './'`, one IIFE bundle, a classic deferred script and extracted CSS support local file-protocol loading. There are no lazy runtime chunks or route-path rewrites. The default production HTML includes a CSP allowing local assets/blob media and forbidding network connections. Optional Tauri CSP stays in its own configuration.
 
-Frontend tests verify schemas, autosave races/retries, creation, list actions, settings remount, conflict recovery, corruption notices, and simulated native-close callbacks. Rust tests use actual temporary directories for storage and restart behavior, locks, corruption preservation, conflict rejection, Trash bytes, path/symlink rejection and injected interruption before atomic replacement. Mocked native-close tests are not substitutes for a launched Tauri window.
+`check:dist` checks every HTML/JS/CSS output for loopback, Tauri and desktop-path dependencies, checks relative referenced files exist, and checks the classic entry point. Official WebToApp documentation lists Frontend as file-protocol packaging with localhost optional. This build uses the no-server path. No service worker or hosted-site offline caching was added.
 
-## Future boundaries
+Three real Chromium tests open the exact production `file:` build with network disabled. They verify startup/style application, editing/autosave, JSON download/reimport, storage across an entire browser restart, capability probe persistence, local image decoding, WAV/WebM playback events and fullscreen entry. This validates the frontend runtime; it does not validate Android's exported shell.
 
-Milestone 2 may introduce block editing using the existing block schema. Rendering, voices, audio, captions, playback, scanning and experimentation require later explicit work. No placeholder executes, synthesizes or transmits content.
+## Capability spike
 
-## Primary references consulted
+`public/capabilities.html`, `.js` and `.css` are a separate diagnostic, reachable from Settings after flushing. Its own `jade-capability-probe` database contains a timestamp only. It checks supported APIs and user-triggered local file operations. Media remains in memory, uses native HTML controls and is never stored in a session. No synthesizer, mixing/render engine, FFmpeg, TTS or milestone media architecture exists.
 
-- Tauri capabilities: <https://v2.tauri.app/security/capabilities/>
-- Tauri configuration: <https://v2.tauri.app/reference/config/>
-- Atomic persistence API: <https://docs.rs/tempfile/latest/tempfile/struct.NamedTempFile.html#method.persist>
-- JSON Schema runtime used: <https://docs.rs/crate/jsonschema/0.18.3>
+## Recovery and privacy
+
+A developer can instantiate `IndexedDBRepository` for the same store and call `restore(id)` in a local development/debugging context. No global app object or unrestricted production bridge is exposed. Alternatively, in a trusted browser's IndexedDB inspector, read `trash[id].session` without editing it, copy its JSON into a local file, and use Import session JSON; this creates a new identity and leaves Trash unchanged. Android manual recovery may require developer assistance. Do not uninstall/clear storage before exporting recoverable data.
+
+Data is scoped to the WebView origin/profile and is not encrypted. Quota/eviction, package identity, signing key and origin stability matter. JSON backups should be kept outside app storage. Imported text is rendered through React, never executed as code. There are no cloud/network APIs or session telemetry. Generated APK shell settings must be checked separately.
+
+## Future boundary
+
+No Milestone 2 implementation. The original domain schema and placeholder blocks remain intact. Later milestones can depend on the repository contracts without binding their logic to a desktop command or Android bridge.
+
+## Primary references
+
+- IndexedDB transactions: <https://developer.mozilla.org/en-US/docs/Web/API/IDBTransaction>
+- Transaction completion: <https://developer.mozilla.org/en-US/docs/Web/API/IDBTransaction/complete_event>
+- WebToApp Frontend: <https://shiaho777.github.io/web-to-app/guide/app-types/frontend>
+- WebToApp app types (file protocol/optional localhost): <https://shiaho777.github.io/web-to-app/guide/app-types/>

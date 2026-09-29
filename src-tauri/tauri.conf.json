@@ -4,10 +4,10 @@
   "version": "0.1.0",
   "identifier": "local.jade.hypnostudio",
   "build": {
-    "beforeDevCommand": "npm run dev",
+    "beforeDevCommand": "npm run dev:desktop-ui",
     "devUrl": "http://127.0.0.1:1420",
-    "beforeBuildCommand": "npm run build",
-    "frontendDist": "../dist"
+    "beforeBuildCommand": "npm run build:desktop-ui",
+    "frontendDist": "../dist-tauri"
   },
   "app": {
     "windows": [

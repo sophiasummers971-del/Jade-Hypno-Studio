@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { randomId } from './uuid';
 
 const id = z
   .string()
@@ -150,7 +151,7 @@ export function newSession(title: string, settings: Settings): Session {
   const now = new Date().toISOString();
   return SessionSchema.parse({
     schemaVersion: 1,
-    id: crypto.randomUUID(),
+    id: randomId(),
     title: title.trim(),
     description: '',
     mode: 'standard',
@@ -180,7 +181,7 @@ export function copySession(session: Session): Session {
   const now = new Date().toISOString();
   return SessionSchema.parse({
     ...structuredClone(session),
-    id: crypto.randomUUID(),
+    id: randomId(),
     title: `${session.title.slice(0, 193)} (copy)`,
     createdAt: now,
     updatedAt: now,

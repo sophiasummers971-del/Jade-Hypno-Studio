@@ -2,6 +2,7 @@ import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { App } from './App';
+import { tauriLifecycle } from './platform/tauri';
 import { memoryRepository } from './test/memoryRepository';
 const windowMock = vi.hoisted(() => ({
   callback: undefined as
@@ -29,7 +30,7 @@ beforeEach(() => {
 it('flushes pending settings before permitting native destruction', async () => {
   const repo = memoryRepository();
   const user = userEvent.setup();
-  render(<App repo={repo} />);
+  render(<App repo={repo} lifecycle={tauriLifecycle} />);
   await waitFor(() =>
     expect(screen.getByRole('button', { name: 'New session' })).toBeEnabled(),
   );
@@ -51,7 +52,7 @@ it('flushes pending settings before permitting native destruction', async () => 
 it('keeps the native window open if closing cannot save settings', async () => {
   const repo = memoryRepository();
   const user = userEvent.setup();
-  render(<App repo={repo} />);
+  render(<App repo={repo} lifecycle={tauriLifecycle} />);
   await waitFor(() =>
     expect(screen.getByRole('button', { name: 'New session' })).toBeEnabled(),
   );

@@ -1,33 +1,71 @@
 # Jade Hypno Studio
 
-Private, single-user, local-first desktop workspace for one adult to organise personalised audiovisual sessions. Not a medical application, therapy service, public platform or remote-control tool.
+**PRIMARY TARGET: Private Android APK packaged through WebToApp.**
 
-**Current scope: Milestone 1 — Foundation only.** React + TypeScript + Vite + Tauri 2. The foundation code and automated checks are implemented. Native desktop launch/build acceptance is **not yet verified**: the implementation environment lacks Linux GTK/WebKit/pkg-config prerequisites. Do not treat the browser build as a verified desktop beta. See `docs/verification.md` for the remaining gate.
+**PRIMARY STORAGE: IndexedDB.**
 
-## Requirements
+**OPTIONAL SECONDARY TARGET: Tauri desktop.**
 
-- Node.js 22.12+ and npm; the lockfile pins the dependency tree.
-- Rust stable with Cargo. This build was tested with Rust 1.98.1; dependency minimum versions may exceed the package's own language minimum.
-- Tauri platform prerequisites: <https://v2.tauri.app/start/prerequisites/>.
-- Linux: C/C++ build tools, pkg-config, GTK 3, WebKitGTK 4.1 development libraries, the Tauri packaging prerequisites and a desktop display.
-- Windows: Microsoft C++ build tools and WebView2. macOS: Xcode command-line tools. These platforms have not been tested here.
+A private, single-user, local-first workspace for one adult to organise personalised audiovisual sessions. No medical/therapy service, accounts, backend or public hosting.
 
-## Run locally
+**Milestone 1.1 compatibility amendment: frontend/storage COMPLETE; actual APK verification UNVERIFIED.** The old GTK/WebKit desktop blocker is not a primary acceptance requirement. This amendment does not implement Milestone 2.
+
+## Run and build
+
+Node.js 22.12+ and npm are sufficient for the primary web build. Rust is not required.
 
 ```sh
 npm ci
-npm run desktop:dev
-```
-
-This starts the Vite development server on `127.0.0.1:1420` and the Tauri window. Production does not run an HTTP server. Development/build installation requires access to npm, crates.io and platform dependency providers; there is no session-data upload.
-
-```sh
 npm run dev
+npm run build
+npm run check:dist
 ```
 
-This second command is **UI preview only**. A browser cannot access the session store. It displays a warning and disables creation; there is no localStorage, IndexedDB or remote fallback.
+Development uses `127.0.0.1:1420`. Production does **not** require a server or localhost: package the entire generated `dist/` directory, including `index.html`, `assets/` and the capability-check files. Assets use relative URLs. Navigation stays inside React state, so there are no server-route rewrites or history-path requirements.
 
-## Verify and build
+The primary build is a single classic deferred JavaScript bundle with a separate local stylesheet. This avoids ES module/CORS issues on file-protocol WebViews. It contains no Tauri runtime code. Do not package the source tree or `dist-tauri/` for Android.
+
+For the phone steps, see **[docs/webtoapp.md](docs/webtoapp.md)**. The delivery includes a ready-built `dist/` and `webtoapp-dist.zip`; no on-phone Node installation is required when using those files.
+
+## Preserved foundation
+
+All six views remain: Home, Sessions, New Session, Session Editor, Settings, About / Safety. Create/open, title/description/mode edits, duplicate, rename, confirmed recoverable deletion, metadata and block placeholders are preserved. Autosave waits 600 ms, orders writes and never treats a failed write as saved. Save, Save as copy and confirmed Reopen saved version remain available.
+
+Settings now also debounce-save. Explicit Save settings and navigation flush remain. Backgrounding attempts to flush sessions/settings, but Android can kill a process without a final event. Wait for **Saved locally** before closing; force-stop/power loss can lose a pending draft.
+
+## Local storage
+
+The default build opens IndexedDB database `jade-hypno-studio`, database version 1:
+
+| Object store | Key           | Value                               |
+| ------------ | ------------- | ----------------------------------- |
+| `sessions`   | Session UUID  | Validated schema-version-1 Session  |
+| `settings`   | `preferences` | Validated schema-version-1 Settings |
+| `trash`      | Session UUID  | `{ session, deletedAt }`            |
+
+There is no localStorage persistence or temporary in-memory production fallback. If IndexedDB is unavailable, the UI reports an error. Active session edits, conflicting-revision checks and writes share a readwrite transaction. Delete copies the original into Trash and removes the active record in the **same transaction**. Success is reported only after transaction completion. Corrupt records are left untouched and shown separately from valid sessions.
+
+Browser/WebView storage is scoped to its storage origin/profile. The installed APK must preserve its package identity, signing key and local content origin across updates. Builder preview and the installed APK can use different stores. Uninstall, clear-app-data, private/ephemeral mode, storage eviction or an origin change can remove or hide data. Keep exported backups outside app storage.
+
+`IndexedDBRepository.restore(id)` is a tested recovery API that refuses to overwrite an active record; there is no Trash browser/restore UI yet. Developer-assisted recovery is described in `docs/architecture.md`. No purge action exists. Do not clear app data to solve a malformed-record error.
+
+## Portable JSON backups
+
+In the editor, choose **Export session JSON**. It validates and exports the current draft, even when a local save has failed. A Blob/download handoff is used; the UI says “download requested” because it cannot observe Android's final file write. Verify the file appears in Downloads or your chosen folder.
+
+In Sessions, choose **Import session JSON** and select a local `.json` file. JSON and the full version-1 schema are validated before persistence. Imports always receive a **new UUID and new creation/update timestamps**; the title and content remain. Existing active or trashed sessions cannot be overwritten by an import. Invalid/oversized imports change nothing. Files are limited to 4 MiB.
+
+This amendment supplies **per-session** portable backup/restore. The optional all-data backup was not added; settings and Trash are not included in a session export. Export each session you need to keep. Older desktop session JSON can be imported the same way, without direct filesystem access or automatic migration.
+
+## Offline and privacy
+
+The packaged app loads local assets. No accounts, Google authentication, Google Play Services API, cloud storage, database backend, CDN scripts, remote fonts, tracking, analytics, telemetry or remote configuration are used. Production CSP sets `connect-src 'none'`. The app has no network calls for session/settings/import/export operations.
+
+Production was tested directly over `file:` with browser networking disabled, including an entire browser restart, session/settings persistence and JSON import/export. A browser tab originally served over HTTP is **not** promised to cold-launch offline: no service worker/site cache is implemented. Offline cold startup is supplied by the packaged local files, not public hosting.
+
+Initial development dependency/browser-test downloads and installing a WebView/WebToApp builder can require internet. That does not add a runtime app dependency. WebToApp's generated Android shell, download bridge, permissions and any enabled extensions are outside this frontend and remain device-verification items. Keep optional online features disabled. JSON/IndexedDB is not encrypted; this does not defend against a compromised/unlocked device or another process with equivalent access.
+
+## Verification
 
 ```sh
 npm run typecheck
@@ -35,74 +73,39 @@ npm run lint
 npm test
 npm run format:check
 npm run schema:check
-cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
-cargo clippy --manifest-path src-tauri/Cargo.toml --no-default-features --all-targets --locked -- -D warnings
-cargo test --manifest-path src-tauri/Cargo.toml --no-default-features --locked
 npm run build
+npm run check:dist
+npx playwright install chromium --only-shell
+npm run test:e2e
+```
+
+The locked Playwright version is 1.56.1: its available Chromium build ran successfully here after the initially resolved newer browser download failed. Playwright and fake-indexeddb are **development-only**. The adapter itself uses native IndexedDB without a runtime library. Schema generation still derives Rust JSON schemas from Zod; after a domain schema change run `npm run schema:generate` and commit the results.
+
+See **[docs/verification.md](docs/verification.md)** for evidence and **[docs/webtoapp.md](docs/webtoapp.md)** for the device checklist. `Settings → Device capability check` opens a standalone local diagnostic for storage, file handoff, images, audio/video and fullscreen. It is not a media engine.
+
+## Optional desktop
+
+Tauri is retained to preserve valid work, but is excluded at build time from the default web bundle. `@platform` resolves to `web.ts` by default and `tauri.ts` only for `--mode tauri`.
+
+```sh
+npm run desktop:dev
 npm run desktop:build
 ```
 
-`npm run build` produces only the frontend in `dist/`. `desktop:build` compiles and packages the desktop application for the host platform under `src-tauri/target/release/bundle/`. Unsigned packages may trigger OS warnings; signing and distribution are outside this milestone. Platform bundling and installation remain unverified.
+These optional commands require Rust and Tauri's host prerequisites. They use separate `dist-tauri/` output and the unchanged native JSON store. Typical desktop storage is the OS app-data directory under `local.jade.hypnostudio`, containing `sessions/`, `settings.json`, `Trash/` and `.studio.lock`. Desktop storage and IndexedDB are independent; JSON export/import is the portable bridge. There is no automatic sync.
 
-After changing domain schemas, run `npm run schema:generate` and commit the generated schemas. Schema version 1 is accepted; other versions are rejected without rewriting. There is no migration engine.
-
-## What works in the foundation
-
-- Home, Sessions, New Session, Session Editor, Settings, About / Safety.
-- Create, validate, save, reopen, duplicate, rename and confirmed move to Trash.
-- Title/description/mode editing, metadata and read-only block placeholders.
-- 600 ms debounced autosave, serialized writes, visible failure state, explicit Save and Save as copy.
-- Navigation and normal window closure wait for saves. If saving fails the current view/window remains open.
-- Save as copy keeps you on the original. For conflicts, save a copy, then use **Reopen saved version** and confirm discarding the original draft.
-- Settings save explicitly and when leaving the view or normally closing. New sessions use their defaults.
-
-## Where files live
-
-Native code uses Tauri `app.path().app_data_dir()` with identifier `local.jade.hypnostudio`. The frontend never chooses the storage root.
-
-Typical locations (environment overrides and OS configuration can change the prefix):
-
-| Platform | Application data folder                                                                  |
-| -------- | ---------------------------------------------------------------------------------------- |
-| Linux    | `$XDG_DATA_HOME/local.jade.hypnostudio`, usually `~/.local/share/local.jade.hypnostudio` |
-| Windows  | `%APPDATA%\local.jade.hypnostudio`                                                       |
-| macOS    | `~/Library/Application Support/local.jade.hypnostudio`                                   |
-
-Within that folder:
-
-- `sessions/<canonical-uuid>.json` — versioned session files.
-- `settings.json` — saved preferences (built-in defaults are used until the first settings write).
-- `Trash/<session-uuid>-<unique-uuid>.json` — deleted session originals, retained indefinitely.
-- `.studio.lock` — advisory lock; a second studio instance cannot access the same store.
-
-Data is never intentionally written into the repository. Git ignores common data paths as an extra safeguard. Files are plain JSON, **not encrypted**. Back up this folder yourself with the app closed.
-
-To restore a trashed session, close the app, inspect the JSON `id`, and copy it to `sessions/<id>.json` only if that name does not already exist. Never overwrite an existing session during recovery. Malformed files are retained unchanged; make a backup before manual repair. Restore well-formed version-1 JSON, then reopen the app. Corrupt settings are not silently reset.
-
-## Privacy and security
-
-No accounts, backend, analytics, telemetry, advertising, tracking, remote logs, model APIs, automatic updates or session network transmission. App assets and fonts are bundled/local. Startup and session editing need no internet after the app and OS webview are installed. A Windows WebView2 installer/bootstrapper can require internet during installation if the webview is absent; that is a platform prerequisite, not session transmission.
-
-Six bounded IPC operations accept session UUIDs or validated documents, not arbitrary filesystem paths. The export-directory setting is inert text; it grants no filesystem authority. Rust validates inputs and files independently of the frontend. Capabilities are limited to the local main window, those commands, close destruction and event handling. The production CSP excludes remote content/connections apart from Tauri's local IPC transport. No shell plugin, unrestricted filesystem plugin or unsafe HTML injection is included.
-
-This does not protect data from an attacker already controlling your OS account. Use full-disk encryption/access controls if needed. Atomic writes protect the previously saved JSON from partial writes; force-quit, power loss and filesystem failures can still lose edits that have not reached disk. Directory syncing adds durability on Unix, but no power-loss guarantee is claimed across every filesystem/OS.
-
-## Limits and later milestones
-
-No full block editor, safety scanner, TTS, playback, audio/music mixing, captions engine, video/FFmpeg rendering, AI generation, experiment tracking, accounts, sync, sharing or payments. `SafetyReview` and `ExperimentMetadata` are data placeholders only. Initial modes are `standard` and `custom`, neutral structural labels.
-
-Sessions are limited to 4 MiB on disk and 200 blocks. The small personal library is loaded in memory; pagination/indexing, trash UI, encryption, migration, automated backups and external-editor file watching are not implemented. Concurrent internal edits are serialized and a second app instance is locked out. Timestamp-based conflict checks do not detect an external manual edit that deliberately retains the same `updatedAt` value.
-
-Development dependency installation emitted an ESLint 9 end-of-support warning and a transitive `whatwg-encoding` deprecation warning. Both are development-only; they are documented rather than hidden. No exhaustive third-party vulnerability audit or native platform certification has been performed.
-
-## Delivery archive
-
-The source archive includes a `jade-hypno-studio.bundle` containing the isolated Git branch. To restore its history in a separate directory:
+Native storage tests can run without GUI dependencies:
 
 ```sh
-git clone jade-hypno-studio.bundle jade-hypno-studio-restored
-cd jade-hypno-studio-restored
-git switch codex/milestone-1-foundation
+cargo test --manifest-path src-tauri/Cargo.toml --no-default-features --locked
 ```
 
-No merge, deployment or push was performed. Stop at this milestone.
+No GTK/WebKit installation or desktop build was attempted for this amendment. A prior native build remained unverified; that does not block M1.1's new primary target.
+
+## Explicit limits
+
+No block editor, scanner, TTS, audio/video generation engine, FFmpeg integration, hypnosis playback, AI APIs, experiment tracking, cloud sync, authentication or Google integration. SafetyReview and ExperimentMetadata remain structural fields only. Media controls on the isolated diagnostic page only test user-selected local files; nothing enters sessions.
+
+Single-user beta limits remain: 200 blocks / 4 MiB per session, no pagination, no migration engine, no automatic backup/encryption and no Trash UI. Cross-window sessions use optimistic revision conflict checks; settings are last-committed-write-wins across separate windows. Filesystem power-loss durability and IndexedDB quota/eviction behavior remain OS/browser-dependent. Real Android keyboard, Back button, process death, permissions and exported APK behavior must be tested on-device.
+
+The source/Git bundle and packaging output are delivered privately. No merge, push, public deployment or Milestone 2 work occurred.

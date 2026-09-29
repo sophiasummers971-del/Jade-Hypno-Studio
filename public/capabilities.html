@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <title>Jade · Device capability check</title>
+    <link rel="stylesheet" href="./capabilities.css" />
+    <script defer src="./capabilities.js"></script>
+  </head>
+  <body>
+    <main>
+      <a href="./index.html">Return to Studio</a>
+      <h1>Device capability check</h1>
+      <p>
+        This diagnostic uses only local browser APIs. Selected media stays in
+        memory and is never uploaded or added to sessions. This is not a session
+        playback engine.
+      </p>
+      <p id="environment"></p>
+      <section>
+        <h2>Local persistence</h2>
+        <button id="write-probe">Write test marker</button
+        ><button id="reload">Reload this check</button>
+        <p id="storage" role="status">Checking IndexedDB…</p>
+        <button id="durable">Request persistent storage</button>
+        <p id="durability" role="status"></p>
+      </section>
+      <section>
+        <h2>JSON file handoff</h2>
+        <button id="export">Download test JSON</button>
+        <p id="download" role="status">
+          A download request does not prove Android saved the file; check
+          Downloads.
+        </p>
+        <label
+          >Select JSON<input
+            id="json"
+            type="file"
+            accept=".json,application/json"
+        /></label>
+        <p id="json-result" role="status"></p>
+      </section>
+      <section>
+        <h2>Local media selection</h2>
+        <label
+          >Select image<input id="image" type="file" accept="image/*" /></label
+        ><img id="image-preview" alt="Selected local image" hidden />
+        <p id="image-result" role="status"></p>
+        <label
+          >Select audio<input id="audio" type="file" accept="audio/*" /></label
+        ><audio id="audio-preview" controls></audio>
+        <p id="audio-result" role="status">
+          Select a local file, then press Play.
+        </p>
+        <label
+          >Select video<input id="video" type="file" accept="video/*" /></label
+        ><video id="video-preview" controls playsinline></video>
+        <p id="video-result" role="status">
+          Select a local file, then press Play.
+        </p>
+        <p id="codecs"></p>
+      </section>
+      <section>
+        <h2>Fullscreen</h2>
+        <button id="fullscreen">Test fullscreen</button>
+        <p id="fullscreen-result" role="status"></p>
+      </section>
+      <p>
+        Repeat in the signed APK with airplane mode on. App updates must retain
+        the package ID, signing key and storage origin. Android force-stop,
+        uninstall, clear-data and storage eviction are separate from a normal
+        reload.
+      </p>
+    </main>
+  </body>
+</html>

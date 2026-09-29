@@ -4,3 +4,7 @@ src-tauri/target
 src-tauri/gen
 Cargo.lock
 src-tauri/schemas
+
+dist-tauri
+test-results
+playwright-report

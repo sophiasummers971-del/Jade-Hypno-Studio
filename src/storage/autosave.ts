@@ -1,5 +1,5 @@
 import type { Session } from '../domain/schema';
-import type { Repository } from './repository';
+import type { SessionRepository } from './repository';
 export type SaveState = 'saved' | 'unsaved' | 'saving' | 'error';
 /** One ordered writer. A completion only acknowledges the revision actually written. */
 export class Autosave {
@@ -11,7 +11,7 @@ export class Autosave {
   private expected: string;
   private current: Session;
   constructor(
-    private repo: Repository,
+    private repo: SessionRepository,
     session: Session,
     private notify: (
       state: SaveState,

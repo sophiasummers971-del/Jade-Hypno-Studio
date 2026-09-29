@@ -1,15 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { isTauri } from '@tauri-apps/api/core';
-import { getCurrentWindow } from '@tauri-apps/api/window';
+import { platform } from '@platform';
+import type { Lifecycle } from './platform/contracts';
+import {
+  downloadSession,
+  importSessionJson,
+  readJsonFile,
+} from './storage/portable';
 import {
   modes,
   resolutions,
   newSession,
+  parseSession,
   type Session,
   type Settings,
 } from './domain/schema';
 import {
-  repository,
   duplicateSession,
   type Repository,
   type SessionList,
@@ -26,7 +31,13 @@ type View =
   | 'Settings'
   | 'About / Safety';
 const emptyList: SessionList = { sessions: [], issues: [] };
-export function App({ repo = repository }: { repo?: Repository }) {
+export function App({
+  repo = platform.repository,
+  lifecycle = platform.lifecycle,
+}: {
+  repo?: Repository;
+  lifecycle?: Lifecycle;
+}) {
   const [view, setView] = useState<View>('Home');
   const [list, setList] = useState(emptyList);
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -50,8 +61,8 @@ export function App({ repo = repository }: { repo?: Repository }) {
   const guard = useRef(false);
   const latest = useRef({ settings, draftSettings });
   latest.current = { settings, draftSettings };
-  const native = isTauri();
-  const available = native || repo !== repository;
+  const importInput = useRef<HTMLInputElement>(null);
+  const settingsFlight = useRef<Promise<void> | null>(null);
   const report = useCallback(
     (message: string, problem: unknown) =>
       setError({ message, detail: errorDetail(problem) }),
@@ -59,7 +70,6 @@ export function App({ repo = repository }: { repo?: Repository }) {
   );
   const refresh = useCallback(async () => setList(await repo.list()), [repo]);
   useEffect(() => {
-    if (!available) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -71,7 +81,7 @@ export function App({ repo = repository }: { repo?: Repository }) {
       } catch (problem) {
         if (!cancelled)
           report(
-            'Settings could not be loaded. Repair the original file before saving settings.',
+            'Settings could not be loaded. The original data has been preserved; see diagnostics.',
             problem,
           );
       }
@@ -86,71 +96,92 @@ export function App({ repo = repository }: { repo?: Repository }) {
     return () => {
       cancelled = true;
     };
-  }, [available, repo, report]);
+  }, [repo, report]);
   useEffect(() => () => writer.current?.dispose(), []);
-  const flushAll = useCallback(async () => {
-    await writer.current?.flush();
-    const { settings: saved, draftSettings: draft } = latest.current;
-    if (draft && JSON.stringify(draft) !== JSON.stringify(saved)) {
-      const result = await repo.saveSettings(draft);
-      setSettings(result);
-      setDraftSettings(result);
-      latest.current = { settings: result, draftSettings: result };
+  const flushSettings = useCallback(async () => {
+    if (settingsFlight.current) return settingsFlight.current;
+    settingsFlight.current = (async () => {
+      while (
+        latest.current.draftSettings &&
+        JSON.stringify(latest.current.settings) !==
+          JSON.stringify(latest.current.draftSettings)
+      ) {
+        const draft = latest.current.draftSettings;
+        const result = await repo.saveSettings(draft);
+        const newest = latest.current.draftSettings;
+        setSettings(result);
+        if (JSON.stringify(newest) === JSON.stringify(draft)) {
+          setDraftSettings(result);
+          latest.current = { settings: result, draftSettings: result };
+        } else latest.current = { settings: result, draftSettings: newest };
+      }
+    })();
+    try {
+      await settingsFlight.current;
+    } finally {
+      settingsFlight.current = null;
     }
   }, [repo]);
-  // The OS close button uses the same save barrier as internal navigation.
+  const flushAll = useCallback(async () => {
+    await writer.current?.flush();
+    await flushSettings();
+  }, [flushSettings]);
   useEffect(() => {
-    const preventReload = (event: BeforeUnloadEvent) => {
-      const current = latest.current;
-      if (
-        writer.current?.dirty ||
-        JSON.stringify(current.settings) !==
-          JSON.stringify(current.draftSettings)
-      ) {
-        event.preventDefault();
-        event.returnValue = '';
-      }
-    };
-    window.addEventListener('beforeunload', preventReload);
-    if (!native)
-      return () => window.removeEventListener('beforeunload', preventReload);
+    if (JSON.stringify(settings) === JSON.stringify(draftSettings)) return;
+    const timer = setTimeout(() => {
+      void flushSettings().catch((problem) =>
+        report(
+          'Settings have not been saved. Retry Save settings or export your work.',
+          problem,
+        ),
+      );
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [settings, draftSettings, flushSettings, report]);
+  useEffect(() => {
     let disposed = false;
-    let unlisten: (() => void) | undefined;
-    void getCurrentWindow()
-      .onCloseRequested(async (event) => {
-        event.preventDefault();
-        if (guard.current) return;
+    let cleanup: (() => void) | undefined;
+    void lifecycle({
+      isDirty: () =>
+        Boolean(writer.current?.dirty) ||
+        JSON.stringify(latest.current.settings) !==
+          JSON.stringify(latest.current.draftSettings),
+      flush: flushAll,
+      requestClose: async () => {
+        if (guard.current) return false;
         guard.current = true;
         setBusy(true);
         try {
           await flushAll();
-          await getCurrentWindow().destroy();
+          return true;
         } catch (problem) {
           report(
             'Could not save before closing. The window remains open; fix the issue and retry.',
             problem,
           );
+          return false;
         } finally {
           guard.current = false;
           setBusy(false);
         }
-      })
+      },
+      report,
+    })
       .then((remove) => {
         if (disposed) remove();
-        else unlisten = remove;
+        else cleanup = remove;
       })
       .catch((problem) =>
         report(
-          'The window-close save guard could not start. Save manually before closing.',
+          'Lifecycle save protection could not start. Save manually before closing.',
           problem,
         ),
       );
     return () => {
       disposed = true;
-      unlisten?.();
-      window.removeEventListener('beforeunload', preventReload);
+      cleanup?.();
     };
-  }, [native, flushAll, report]);
+  }, [lifecycle, flushAll, report]);
   async function run(task: () => Promise<void>) {
     if (guard.current) return;
     guard.current = true;
@@ -228,21 +259,15 @@ export function App({ repo = repository }: { repo?: Repository }) {
         </nav>
         <div className="sidebar-foot">
           <span className="dot" /> Local & private
-          <p>Foundation · Milestone 1</p>
+          <p>Foundation · Milestone 1.1</p>
         </div>
       </aside>
       <main aria-busy={busy}>
         <header>
           <p className="eyebrow">YOUR SPACE. YOUR CONTROL.</p>
-          <span className="badge">FOUNDATION / 01</span>
+          <span className="badge">FOUNDATION / 01.1</span>
         </header>
-        {!available && (
-          <div className="notice" role="status">
-            Browser preview only. Open the Tauri desktop app for local files and
-            editing. No browser storage fallback is used.
-          </div>
-        )}
-        {available && !ready && <p role="status">Opening local workspace…</p>}
+        {!ready && <p role="status">Opening local workspace…</p>}
         {error && <ErrorNotice {...error} dismiss={() => setError(null)} />}
         {status && (
           <p role="status" className="notice">
@@ -273,7 +298,7 @@ export function App({ repo = repository }: { repo?: Repository }) {
             <div className="cards">
               <section>
                 <h2>{list.sessions.length} saved sessions</h2>
-                <p>JSON files in your application data folder.</p>
+                <p>{platform.storageLabel}.</p>
                 <button
                   disabled={!ready || busy}
                   onClick={() => navigate('Sessions')}
@@ -310,12 +335,46 @@ export function App({ repo = repository }: { repo?: Repository }) {
             >
               New session
             </button>
+            <input
+              ref={importInput}
+              className="sr-only"
+              aria-label="Import session JSON file"
+              type="file"
+              accept=".json,application/json"
+              disabled={busy || !settings}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                event.target.value = '';
+                if (!file) return;
+                void run(async () => {
+                  const json = await readJsonFile(file);
+                  // Validate before touching persistence, including unrelated drafts.
+                  parseSession(json);
+                  await flushAll();
+                  const imported = await importSessionJson(repo, json);
+                  openEditor(imported);
+                  setStatus(
+                    'Imported locally with a new session ID. Existing sessions were not overwritten.',
+                  );
+                });
+              }}
+            />
+            <button
+              disabled={busy || !settings}
+              onClick={() => importInput.current?.click()}
+            >
+              Import session JSON
+            </button>
+            <p className="hint">
+              Imports are validated and saved as new sessions. Nothing is
+              uploaded.
+            </p>
             {list.issues.length > 0 && (
               <section className="error">
                 <h2>Some files could not be opened</h2>
                 <p>
-                  Originals were left unchanged. Repair them manually in the
-                  sessions folder.
+                  Original records were left unchanged. Check diagnostics before
+                  attempting manual recovery.
                 </p>
                 {list.issues.map((issue) => (
                   <details key={issue.file}>
@@ -522,6 +581,22 @@ export function App({ repo = repository }: { repo?: Repository }) {
                   Save as copy
                 </button>
                 <button
+                  onClick={() => {
+                    try {
+                      const draft = writer.current?.snapshot;
+                      if (!draft) return;
+                      downloadSession(draft);
+                      setStatus(
+                        'JSON download requested. Check your device’s downloads; this does not confirm the file was saved.',
+                      );
+                    } catch (problem) {
+                      report('Could not export this session.', problem);
+                    }
+                  }}
+                >
+                  Export session JSON
+                </button>
+                <button
                   disabled={saveState === 'saving'}
                   onClick={() => setAction({ type: 'reopen', session })}
                 >
@@ -569,6 +644,17 @@ export function App({ repo = repository }: { repo?: Repository }) {
         {view === 'Settings' && (
           <>
             <h1>Settings</h1>
+            <button
+              disabled={busy}
+              onClick={() =>
+                void run(async () => {
+                  await flushAll();
+                  window.location.assign('./capabilities.html');
+                })
+              }
+            >
+              Device capability check
+            </button>
             <p className="lead">
               Defaults for new sessions. Existing sessions keep their settings.
             </p>
@@ -695,7 +781,7 @@ export function App({ repo = repository }: { repo?: Repository }) {
                     </button>
                     <span role="status">
                       {settingsDirty
-                        ? 'Unsaved settings · saved when you leave this view'
+                        ? 'Unsaved settings · autosave pending'
                         : 'Settings saved'}
                     </span>
                   </div>
@@ -703,8 +789,8 @@ export function App({ repo = repository }: { repo?: Repository }) {
               </form>
             ) : (
               <p>
-                Settings are unavailable. Open the desktop app, or inspect the
-                diagnostic message above.
+                Settings are unavailable. Check local storage permissions and
+                the diagnostic message above.
               </p>
             )}
           </>
@@ -716,14 +802,14 @@ export function App({ repo = repository }: { repo?: Repository }) {
               Private by design. Always under your control.
             </p>
             <section>
-              <h2>Jade Hypno Studio · 0.1.0</h2>
+              <h2>Jade Hypno Studio · 0.1.1</h2>
               <p>
                 A local-first workspace for one adult to organise personalised
                 audiovisual sessions. This is not a medical application or
                 therapy service.
               </p>
               <p>
-                This build only manages session structure and local files. It
+                This build only manages session structure and local data. It
                 does not play hypnosis, generate scripts, connect to AI or voice
                 services, or influence anyone.
               </p>
@@ -732,14 +818,14 @@ export function App({ repo = repository }: { repo?: Repository }) {
               <h2>Your data stays on this device</h2>
               <p>
                 No accounts, telemetry, analytics, remote logging or cloud
-                backend. Session files are plain JSON, not encrypted. Other
-                people with access to your operating system account may be able
-                to read them.
+                backend. Local records and exported JSON are not encrypted.
+                Other people with access to your operating system account may be
+                able to read them.
               </p>
               <p>
-                Deletion moves files to the local Trash folder. Trash is
-                retained until you remove it manually. Back up the application
-                data folder yourself.
+                Deletion retains the original in local Trash. Export sessions as
+                JSON backups. Clearing app/browser data or uninstalling can
+                remove sessions, settings and Trash.
               </p>
             </section>
             <section>
@@ -802,7 +888,7 @@ export function App({ repo = repository }: { repo?: Repository }) {
                   await refresh();
                   setStatus(
                     action.type === 'delete'
-                      ? 'Moved to Trash. The JSON file can be recovered manually.'
+                      ? 'Moved to Trash. The original session is retained for recovery.'
                       : 'Session renamed.',
                   );
                 });
@@ -827,7 +913,7 @@ export function App({ repo = repository }: { repo?: Repository }) {
                   <p>
                     {action.type === 'reopen'
                       ? 'Unsaved edits will be discarded. Use Save as copy first if you want to keep them.'
-                      : 'This keeps the original JSON in the application’s Trash folder.'}
+                      : 'The original session stays in local Trash; this does not permanently delete it.'}
                   </p>
                 )}
                 <div className="actions">

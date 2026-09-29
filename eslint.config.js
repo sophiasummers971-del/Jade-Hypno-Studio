@@ -6,6 +6,9 @@ export default tseslint.config(
   {
     ignores: [
       'dist/**',
+      'dist-tauri/**',
+      'test-results/**',
+      'playwright-report/**',
       'node_modules/**',
       'src-tauri/target/**',
       'src-tauri/gen/**',
@@ -14,7 +17,7 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ['**/*.{ts,tsx,js}'],
+    files: ['**/*.{ts,tsx,js,mjs}'],
     languageOptions: { globals: { ...globals.browser, ...globals.node } },
     plugins: { 'react-hooks': hooks },
     rules: hooks.configs.recommended.rules,
