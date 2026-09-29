@@ -13,11 +13,11 @@ describe('RETURN NOW contract', () => {
     const pause = vi.spyOn(media, 'pause').mockImplementation(() => undefined);
     document.body.append(media);
     registerReturnNowHooks({
-      stopNarration: () => order.push('narration'),
-      stopActiveMedia: () => order.push('media'),
-      stopVisualEffects: () => order.push('visuals'),
-      fadeOrStopAudio: () => order.push('audio'),
-      clearTemporarySessionState: () => order.push('clear'),
+      stopNarration: () => { order.push('narration'); },
+      stopActiveMedia: () => { order.push('media'); },
+      stopVisualEffects: () => { order.push('visuals'); },
+      fadeOrStopAudio: () => { order.push('audio'); },
+      clearTemporarySessionState: () => { order.push('clear'); },
     });
     const hostileSessionData = { returnNow: false, RETURN_NOW_ACTION: 'disabled' };
     expect(hostileSessionData.returnNow).toBe(false);
