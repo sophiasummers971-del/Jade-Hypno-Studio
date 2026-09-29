@@ -2,15 +2,21 @@ import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MediaResolver, mediaKind } from './MediaResolver';
 
-const originalCreateObjectURL = URL.createObjectURL;
-const originalRevokeObjectURL = URL.revokeObjectURL;
+const originalCreateObjectURL = Object.getOwnPropertyDescriptor(
+  URL,
+  'createObjectURL',
+);
+const originalRevokeObjectURL = Object.getOwnPropertyDescriptor(
+  URL,
+  'revokeObjectURL',
+);
 
 function restoreUrlMethod(
   name: 'createObjectURL' | 'revokeObjectURL',
-  value: typeof URL.createObjectURL | typeof URL.revokeObjectURL,
+  descriptor: PropertyDescriptor | undefined,
 ) {
-  if (value) {
-    Object.defineProperty(URL, name, { configurable: true, value });
+  if (descriptor) {
+    Object.defineProperty(URL, name, descriptor);
   } else {
     Reflect.deleteProperty(URL, name);
   }
@@ -49,7 +55,9 @@ describe('MediaResolver', () => {
     expect(mediaKind(new File(['x'], 'a.mp4', { type: 'video/mp4' }))).toBe(
       'video',
     );
-    expect(mediaKind(new File(['x'], 'a.txt', { type: 'text/plain' }))).toBeNull();
+    expect(
+      mediaKind(new File(['x'], 'a.txt', { type: 'text/plain' })),
+    ).toBeNull();
   });
 
   it('persists, resolves and revokes an object URL', async () => {

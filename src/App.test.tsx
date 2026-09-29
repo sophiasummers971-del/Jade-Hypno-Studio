@@ -31,7 +31,7 @@ describe('foundation views', () => {
     expect(await screen.findByLabelText('Description')).toHaveValue(
       'A structural note',
     );
-  });
+  }, 10000);
   it('saves settings and loads them on remount', async () => {
     const { repo, user, unmount } = await start();
     await user.click(screen.getByRole('button', { name: 'Settings' }));

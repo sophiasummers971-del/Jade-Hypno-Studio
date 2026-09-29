@@ -149,10 +149,12 @@
               "backgroundType": {
                 "type": "string",
                 "enum": [
+                  "none",
                   "color",
+                  "gradient",
                   "image",
                   "video",
-                  "gradient"
+                  "gif"
                 ],
                 "default": "color"
               },
@@ -179,6 +181,47 @@
                 "minimum": 0,
                 "maximum": 5,
                 "default": 0
+              },
+              "panAmount": {
+                "type": "number",
+                "minimum": -20,
+                "maximum": 20,
+                "default": 0
+              },
+              "brightness": {
+                "type": "number",
+                "minimum": 0.25,
+                "maximum": 2,
+                "default": 1
+              },
+              "brightnessPulse": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "default": 0
+              },
+              "fit": {
+                "type": "string",
+                "enum": [
+                  "cover",
+                  "contain",
+                  "center"
+                ],
+                "default": "cover"
+              },
+              "gradient": {
+                "type": "string",
+                "maxLength": 512,
+                "default": "linear-gradient(180deg, #101319, #202936)"
+              },
+              "fixation": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "point",
+                  "spiral"
+                ],
+                "default": "none"
               },
               "transitionType": {
                 "type": "string",
@@ -295,6 +338,27 @@
                 "minimum": 0,
                 "maximum": 1,
                 "default": 1
+              },
+              "displayDuration": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 300,
+                "default": 0
+              },
+              "fadeDuration": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 10,
+                "default": 0.25
+              },
+              "selectedPhrases": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "maxItems": 50,
+                "default": []
               }
             },
             "required": [
@@ -459,10 +523,12 @@
         "backgroundType": {
           "type": "string",
           "enum": [
+            "none",
             "color",
+            "gradient",
             "image",
             "video",
-            "gradient"
+            "gif"
           ],
           "default": "color"
         },
@@ -489,6 +555,47 @@
           "minimum": 0,
           "maximum": 5,
           "default": 0
+        },
+        "panAmount": {
+          "type": "number",
+          "minimum": -20,
+          "maximum": 20,
+          "default": 0
+        },
+        "brightness": {
+          "type": "number",
+          "minimum": 0.25,
+          "maximum": 2,
+          "default": 1
+        },
+        "brightnessPulse": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0
+        },
+        "fit": {
+          "type": "string",
+          "enum": [
+            "cover",
+            "contain",
+            "center"
+          ],
+          "default": "cover"
+        },
+        "gradient": {
+          "type": "string",
+          "maxLength": 512,
+          "default": "linear-gradient(180deg, #101319, #202936)"
+        },
+        "fixation": {
+          "type": "string",
+          "enum": [
+            "none",
+            "point",
+            "spiral"
+          ],
+          "default": "none"
         },
         "transitionType": {
           "type": "string",

@@ -816,21 +816,161 @@ dd {
 }
 
 /* Milestone 5 visual engine */
-.visual-panel { margin-top:28px; border:1px solid #34404b; border-radius:10px; padding:18px; background:#121820; }
-.visual-heading,.visual-preview-controls { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
-.visual-heading { justify-content:space-between; }
-.visual-layout { display:grid; grid-template-columns:minmax(220px,.7fr) minmax(0,1.3fr); gap:16px; }
-.visual-controls { display:grid; gap:10px; align-content:start; }
-.visual-controls label { display:grid; gap:6px; }
-.visual-controls button,.visual-preview-controls button { min-height:44px; }
-.visual-stage { position:relative; min-height:320px; overflow:hidden; border:1px solid #303945; border-radius:10px; display:grid; place-items:center; isolation:isolate; }
-.visual-stage img,.visual-stage video { position:absolute; inset:0; width:100%; height:100%; }
-.visual-stage-label { position:absolute; top:8px; left:8px; padding:4px 7px; border-radius:5px; background:#090b0dbb; font-size:.78rem; z-index:5; }
-.visual-caption { position:absolute; z-index:6; left:6%; right:6%; padding:8px 12px; color:white; text-shadow:0 2px 5px #000; overflow-wrap:anywhere; }
-.caption-top { top:8%; }.caption-middle { top:50%; transform:translateY(-50%); }.caption-bottom { bottom:8%; }
-.fixation-point { width:18px; height:18px; border:3px solid #fff; border-radius:50%; z-index:4; box-shadow:0 0 0 2px #0008; }
-.fixation-spiral { width:110px; height:110px; border-radius:50%; z-index:4; background:repeating-conic-gradient(#ddd 0deg 12deg,#222 12deg 24deg); opacity:.75; }
-.visual-slow-zoom { animation:visualZoom 18s ease-in-out infinite alternate; }.visual-slow-pan { animation:visualPan 20s ease-in-out infinite alternate; }.visual-opacity-pulse { animation:visualPulse 8s ease-in-out infinite; }.visual-brightness-pulse { animation:visualBright 10s ease-in-out infinite; }.visual-spiral-active { animation:visualSpiral 14s linear infinite; }
-@keyframes visualZoom { to { transform:scale(1.05); } } @keyframes visualPan { to { transform:translateX(3%); } } @keyframes visualPulse { 50% { opacity:.82; } } @keyframes visualBright { 50% { filter:brightness(1.08); } } @keyframes visualSpiral { to { transform:rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .visual-slow-zoom,.visual-slow-pan,.visual-opacity-pulse,.visual-brightness-pulse,.visual-spiral-active { animation:none !important; } }
-@media (max-width:720px) { .visual-layout { grid-template-columns:1fr; }.visual-stage { min-height:240px; }.visual-preview-controls button { flex:1 1 42%; } }
+.visual-panel {
+  margin-top: 28px;
+  border: 1px solid #34404b;
+  border-radius: 10px;
+  padding: 18px;
+  background: #121820;
+}
+.visual-heading,
+.visual-preview-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.visual-heading {
+  justify-content: space-between;
+}
+.visual-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.7fr) minmax(0, 1.3fr);
+  gap: 16px;
+}
+.visual-controls {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+.visual-controls label {
+  display: grid;
+  gap: 6px;
+}
+.visual-controls button,
+.visual-preview-controls button {
+  min-height: 44px;
+}
+.visual-stage {
+  position: relative;
+  min-height: 320px;
+  overflow: hidden;
+  border: 1px solid #303945;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+}
+.visual-stage img,
+.visual-stage video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.visual-stage-label {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 4px 7px;
+  border-radius: 5px;
+  background: #090b0dbb;
+  font-size: 0.78rem;
+  z-index: 5;
+}
+.visual-caption {
+  position: absolute;
+  z-index: 6;
+  left: 6%;
+  right: 6%;
+  padding: 8px 12px;
+  color: white;
+  text-shadow: 0 2px 5px #000;
+  overflow-wrap: anywhere;
+}
+.caption-top {
+  top: 8%;
+}
+.caption-middle {
+  top: 50%;
+  transform: translateY(-50%);
+}
+.caption-bottom {
+  bottom: 8%;
+}
+.fixation-point {
+  width: 18px;
+  height: 18px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  z-index: 4;
+  box-shadow: 0 0 0 2px #0008;
+}
+.fixation-spiral {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  z-index: 4;
+  background: repeating-conic-gradient(#ddd 0deg 12deg, #222 12deg 24deg);
+  opacity: 0.75;
+}
+.visual-slow-zoom {
+  animation: visualZoom 18s ease-in-out infinite alternate;
+}
+.visual-slow-pan {
+  animation: visualPan 20s ease-in-out infinite alternate;
+}
+.visual-opacity-pulse {
+  animation: visualPulse 8s ease-in-out infinite;
+}
+.visual-brightness-pulse {
+  animation: visualBright 10s ease-in-out infinite;
+}
+.visual-spiral-active {
+  animation: visualSpiral 14s linear infinite;
+}
+@keyframes visualZoom {
+  to {
+    transform: scale(1.05);
+  }
+}
+@keyframes visualPan {
+  to {
+    transform: translateX(3%);
+  }
+}
+@keyframes visualPulse {
+  50% {
+    opacity: 0.82;
+  }
+}
+@keyframes visualBright {
+  50% {
+    filter: brightness(1.08);
+  }
+}
+@keyframes visualSpiral {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .visual-slow-zoom,
+  .visual-slow-pan,
+  .visual-opacity-pulse,
+  .visual-brightness-pulse,
+  .visual-spiral-active {
+    animation: none !important;
+  }
+}
+@media (max-width: 720px) {
+  .visual-layout {
+    grid-template-columns: 1fr;
+  }
+  .visual-stage {
+    min-height: 240px;
+  }
+  .visual-preview-controls button {
+    flex: 1 1 42%;
+  }
+}

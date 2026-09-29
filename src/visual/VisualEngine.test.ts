@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { AudioEngine } from '../audio/AudioEngine';
 import type { AudioEngineSnapshot } from '../audio/types';
-import { createBlock, createSessionFromTemplate } from '../domain/scriptBuilder';
+import {
+  createBlock,
+  createSessionFromTemplate,
+} from '../domain/scriptBuilder';
 import { defaultSettings } from '../domain/schema';
 import type { VisualSnapshot } from './types';
 import { VisualEngine } from './VisualEngine';

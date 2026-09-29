@@ -22,7 +22,6 @@ export function registerReturnNowHooks(next: ReturnNowHooks): () => void {
   };
 }
 
-
 async function call(action: (() => void | Promise<void>) | undefined) {
   if (action) await action();
 }
@@ -41,6 +40,7 @@ export async function returnNow(): Promise<void> {
   if (document.fullscreenElement && document.exitFullscreen) {
     await document.exitFullscreen().catch(() => undefined);
   }
-  for (const hooks of [...hookSets]) await call(hooks.clearTemporarySessionState);
+  for (const hooks of [...hookSets])
+    await call(hooks.clearTemporarySessionState);
   window.dispatchEvent(new CustomEvent(RETURN_NOW_EVENT));
 }

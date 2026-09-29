@@ -29,7 +29,14 @@ export const captionModes = [
   'none',
 ] as const;
 export const transitionTypes = ['none', 'fade', 'crossfade'] as const;
-export const backgroundTypes = ['none', 'color', 'gradient', 'image', 'video', 'gif'] as const;
+export const backgroundTypes = [
+  'none',
+  'color',
+  'gradient',
+  'image',
+  'video',
+  'gif',
+] as const;
 
 export const VoiceSettingsSchema = z
   .object({
