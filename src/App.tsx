@@ -25,6 +25,7 @@ import { ScriptBuilder } from './components/ScriptBuilder';
 import { SessionReview } from './components/SessionReview';
 import { GroundingMode } from './components/GroundingMode';
 import { AudioPanel } from './components/AudioPanel';
+import { VisualPanel } from './components/VisualPanel';
 import { invalidateReview, scanSession } from './safety/reviewEngine';
 import { RETURN_NOW_EVENT, returnNow } from './safety/returnNow';
 import {
@@ -681,6 +682,7 @@ export function App({
               focusBlockId={reviewFocusBlockId}
             />
             <AudioPanel session={session} onChange={edit} />
+            <VisualPanel session={session} onChange={edit} />
             <details className="metadata">
               <summary>Session metadata</summary>
               <dl>

@@ -29,7 +29,7 @@ export const captionModes = [
   'none',
 ] as const;
 export const transitionTypes = ['none', 'fade', 'crossfade'] as const;
-export const backgroundTypes = ['color', 'image', 'video', 'gradient'] as const;
+export const backgroundTypes = ['none', 'color', 'gradient', 'image', 'video', 'gif'] as const;
 
 export const VoiceSettingsSchema = z
   .object({
@@ -62,6 +62,12 @@ export const VisualSettingsSchema = z
     blur: z.number().finite().min(0).max(100).default(0),
     zoomAmount: z.number().finite().min(0).max(5).default(0),
     pulseAmount: z.number().finite().min(0).max(5).default(0),
+    panAmount: z.number().finite().min(-20).max(20).default(0),
+    brightness: z.number().finite().min(0.25).max(2).default(1),
+    brightnessPulse: z.number().finite().min(0).max(1).default(0),
+    fit: z.enum(['cover', 'contain', 'center']).default('cover'),
+    gradient: text(512).default('linear-gradient(180deg, #101319, #202936)'),
+    fixation: z.enum(['none', 'point', 'spiral']).default('none'),
     transitionType: z.enum(transitionTypes).default('none'),
   })
   .strict();
@@ -73,6 +79,9 @@ export const CaptionSettingsSchema = z
     alignment: z.enum(['left', 'center', 'right']).default('center'),
     position: z.enum(['top', 'middle', 'bottom']).default('bottom'),
     opacity: level.default(1),
+    displayDuration: z.number().finite().min(0).max(300).default(0),
+    fadeDuration: z.number().finite().min(0).max(10).default(0.25),
+    selectedPhrases: z.array(text(500)).max(50).default([]),
   })
   .strict();
 export const TransitionSettingsSchema = z

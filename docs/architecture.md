@@ -116,3 +116,17 @@ Rules are centralized in `src/safety/rules.ts`. `reviewEngine.ts` has no network
 `returnNow.ts` is a separate application-level exit service. It accepts no session-controlled action or configuration. Later player implementations may register shutdown hooks, but they must use this permanent service rather than implementing a script-controlled exit.
 
 The Calm / Grounding screen is an ordinary React view with no media engine, flashing effects, generated content, or remote dependency. Milestone 3 deliberately adds no TTS, audio mixer, visual engine, FFmpeg, finished player, AI moderation, or cloud service.
+
+## Milestone 5 visual engine
+
+The visual preview is a browser/WebView-only presentation layer. `VisualEngine` subscribes to the Milestone 4 `AudioEngine` snapshot and never creates a competing playback clock. Block identity, pause/resume/stop, and elapsed preview state therefore come from audio. Visual timing remains approximate where Web Speech does not expose word-level timing; block boundaries are authoritative.
+
+Local PNG/JPEG/WebP/GIF/MP4/WebM assets are selected with the browser file picker and stored only in a dedicated IndexedDB asset database. Sessions store an asset reference rather than embedding blobs, keeping session JSON portable and under its existing size limit. Object URLs are created lazily and revoked on replacement/disposal. `cleanupOrphans()` is available for deliberate garbage collection; it is not run automatically because deleting a session asset still referenced by another session would be destructive. The current asset limit is 128 MiB per imported visual. No media is uploaded.
+
+GIF uses native image decoding and can be static on a limited WebView. MP4/WebM support depends on Android System WebView codecs. Decode errors leave the session/reference intact and fall back to the configured color/gradient. Video is muted, looped, inline, and never starts on editor load. Full preview requires an explicit tap. Fullscreen is optional and exits through the existing RETURN NOW path.
+
+Effects are CSS-only: fade/crossfade presentation, slow zoom/pan, conservative opacity/brightness pulse, blur, fixation point, and a slow spiral. There is no WebGL, shader, strobe, rapid inversion, or flashing path. `prefers-reduced-motion` removes zoom, pan, pulse, and spiral animation while preserving static content. Touch controls have 44px minimum action height and do not require hover, right-click, drag, or keyboard input.
+
+Captions are independent from narration generation. Full narration strips pause markers, selected phrases use explicit local settings, emphasis-only reads Markdown-style bold emphasis, and none disables output. Font size, alignment, vertical position, opacity, display duration metadata, and fade duration are stored per block. Caption changes follow the audio block boundary; word-level karaoke timing is intentionally out of scope.
+
+RETURN NOW remains the Milestone 3 permanent action. Its hook registry is composable so M4 audio and M5 visuals can both register cleanup without replacing one another. It stops media/effects, clears caption/preview state, exits fullscreen where supported, and the existing application event restores the ordinary UI.
