@@ -31,6 +31,14 @@ jobs:
             git push origin HEAD:codex/milestone-4-audio-engine
           fi
       - run: npm run format:check
+      - name: Regenerate checked-in schemas
+        run: |
+          npm run schema:generate
+          if ! git diff --quiet; then
+            git add src-tauri/schemas
+            git commit -m "M4: regenerate JSON schemas"
+            git push origin HEAD:codex/milestone-4-audio-engine
+          fi
       - run: npm run schema:check
       - run: npm run build
       - run: npm run check:dist
