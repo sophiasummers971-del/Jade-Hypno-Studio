@@ -94,3 +94,26 @@ Milestone 3+ remains outside this branch. There is no scanner, TTS, media synthe
 - Transaction completion: <https://developer.mozilla.org/en-US/docs/Web/API/IDBTransaction/complete_event>
 - WebToApp Frontend: <https://shiaho777.github.io/web-to-app/guide/app-types/frontend>
 - WebToApp app types (file protocol/optional localhost): <https://shiaho777.github.io/web-to-app/guide/app-types/>
+
+
+## Milestone 3: local safety and review layer
+
+The primary Android/WebToApp architecture remains unchanged: React + TypeScript + Vite uses the platform repository abstraction and IndexedDB for the production web build. Milestone 3 adds only local domain/UI modules above that boundary.
+
+```
+Session document
+  ↓
+pure rules + structural checks (src/safety)
+  ↓
+versioned SafetyReview metadata
+  ↓
+existing SessionRepository / IndexedDB
+  ↓
+Session Review UI
+```
+
+Rules are centralized in `src/safety/rules.ts`. `reviewEngine.ts` has no network dependency and never mutates block narration. Review metadata is part of the existing session document, so the IndexedDB adapter, JSON import/export, autosave ordering, and optional Tauri adapter continue to use the same repository contract.
+
+`returnNow.ts` is a separate application-level exit service. It accepts no session-controlled action or configuration. Later player implementations may register shutdown hooks, but they must use this permanent service rather than implementing a script-controlled exit.
+
+The Calm / Grounding screen is an ordinary React view with no media engine, flashing effects, generated content, or remote dependency. Milestone 3 deliberately adds no TTS, audio mixer, visual engine, FFmpeg, finished player, AI moderation, or cloud service.
