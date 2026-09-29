@@ -1086,3 +1086,55 @@ dd {
     width: 100%;
   }
 }
+
+
+/* Milestone 7 personal experiment lab */
+.experiment-lab {
+  max-width: 980px;
+}
+.experiment-editor {
+  border-color: #4f7567;
+}
+.rating-grid,
+.experiment-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.rating-grid label {
+  margin: 0;
+}
+.experiment-summary {
+  margin: 16px 0 24px;
+}
+.experiment-summary > div {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  border: 1px solid #303741;
+  border-radius: 8px;
+  background: #141920;
+}
+.experiment-summary span {
+  font-size: 1.15rem;
+}
+.experiment-summary small {
+  color: #9aa6b3;
+}
+.experiment-history h3 {
+  margin: 0 0 6px;
+}
+.experiment-history .history-row {
+  margin: 10px 0;
+  opacity: 1;
+}
+@media (max-width: 600px) {
+  .rating-grid,
+  .experiment-summary {
+    grid-template-columns: 1fr;
+  }
+  .experiment-editor .actions button,
+  .experiment-history .actions button {
+    min-height: 44px;
+  }
+}
