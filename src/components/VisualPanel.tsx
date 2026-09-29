@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { AudioEngine } from '../audio/AudioEngine';
 import { AudioMixer } from '../audio/AudioMixer';
 import { BrowserSpeechEngine } from '../audio/BrowserSpeechEngine';
@@ -52,9 +53,14 @@ export function VisualPanel({ session, onChange }: { session: Session; onChange:
       setNotice(`${asset.name} stored locally for this device. Nothing was uploaded.`);
     } catch (error) { setNotice(error instanceof Error ? error.message : 'Visual media import failed.'); }
   };
-  const visual = current?.visualSettings;
+  const visual = current ? current.visualSettings : null;
   const background = visual?.backgroundType === 'gradient' ? visual.gradient : visual?.backgroundColor ?? '#101319';
-  const mediaStyle = visual ? { ...effectStyle(visual, reducedMotion), objectFit: visual.fit === 'center' ? 'none' : visual.fit } : undefined;
+  const mediaStyle: CSSProperties | undefined = visual
+    ? {
+        ...effectStyle(visual, reducedMotion),
+        objectFit: visual.fit === 'center' ? 'none' : visual.fit,
+      }
+    : undefined;
 
   return <section className="visual-panel" aria-label="Visual engine">
     <div className="visual-heading"><div><p className="eyebrow">VISUAL ENGINE / 05</p><h2>Audio-synchronized visual preview</h2></div><span className="badge">{snapshot.state}</span></div>
@@ -75,7 +81,7 @@ export function VisualPanel({ session, onChange }: { session: Session; onChange:
         <label>Fixation<select value={visual?.fixation ?? 'none'} onChange={(e)=>patchVisual({fixation:e.target.value as 'none'|'point'|'spiral'})}><option>none</option><option>point</option><option>spiral</option></select></label>
       </section>
       <section ref={stage} className="visual-stage" style={{ background }}>
-        {current && visual?.backgroundType !== 'none' && media && (media.asset.kind === 'video' ? <video ref={video} className={effectClass(visual, reducedMotion)} style={{...mediaStyle,...transitionStyle(current.transitionSettings,reducedMotion)}} src={media.url} loop muted playsInline preload="metadata" onError={()=>setNotice('This WebView could not decode the selected video. The session and asset reference were preserved.')} /> : <img className={effectClass(visual, reducedMotion)} style={{...mediaStyle,...transitionStyle(current.transitionSettings,reducedMotion)}} src={media.url} alt="Local preview background" onError={()=>setNotice('This WebView could not decode the selected image/GIF. The session and asset reference were preserved.')} />)}
+        {current && visual && visual.backgroundType !== 'none' && media && (media.asset.kind === 'video' ? <video ref={video} className={effectClass(visual, reducedMotion)} style={{...mediaStyle,...transitionStyle(current.transitionSettings,reducedMotion)}} src={media.url} loop muted playsInline preload="metadata" onError={()=>setNotice('This WebView could not decode the selected video. The session and asset reference were preserved.')} /> : <img className={effectClass(visual, reducedMotion)} style={{...mediaStyle,...transitionStyle(current.transitionSettings,reducedMotion)}} src={media.url} alt="Local preview background" onError={()=>setNotice('This WebView could not decode the selected image/GIF. The session and asset reference were preserved.')} />)}
         {current && visual?.fixation === 'point' && <span className="fixation-point" aria-hidden="true" />}
         {current && visual?.fixation === 'spiral' && <span className={`fixation-spiral ${reducedMotion ? '' : 'visual-spiral-active'}`} aria-hidden="true" />}
         {snapshot.caption && current && <div className={`visual-caption caption-${current.captionSettings.position}`} style={{fontSize:`${current.captionSettings.fontSize}px`,textAlign:current.captionSettings.alignment,opacity:current.captionSettings.opacity,transition:`opacity ${current.captionSettings.fadeDuration}s ease`}}>{snapshot.caption}</div>}
