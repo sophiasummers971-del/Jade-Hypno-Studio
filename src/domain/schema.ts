@@ -143,9 +143,20 @@ export const SessionSchema = z
   .strict()
   .superRefine((session, context) => {
     if (Date.parse(session.updatedAt) < Date.parse(session.createdAt))
-      context.addIssue({ code: 'custom', path: ['updatedAt'], message: 'Updated timestamp precedes creation timestamp' });
-    if (new Set(session.blocks.map((block) => block.id)).size !== session.blocks.length)
-      context.addIssue({ code: 'custom', path: ['blocks'], message: 'Block IDs must be unique' });
+      context.addIssue({
+        code: 'custom',
+        path: ['updatedAt'],
+        message: 'Updated timestamp precedes creation timestamp',
+      });
+    if (
+      new Set(session.blocks.map((block) => block.id)).size !==
+      session.blocks.length
+    )
+      context.addIssue({
+        code: 'custom',
+        path: ['blocks'],
+        message: 'Block IDs must be unique',
+      });
   });
 export const SettingsSchema = z
   .object({
@@ -230,10 +241,14 @@ export function parseSession(json: string): Session {
   try {
     data = JSON.parse(json);
   } catch {
-    throw new Error('This file is not valid JSON. The original file has not been changed.');
+    throw new Error(
+      'This file is not valid JSON. The original file has not been changed.',
+    );
   }
   const result = SessionSchema.safeParse(data);
   if (!result.success)
-    throw new Error(`Invalid session: ${result.error.issues.map((i) => `${i.path.join('.') || 'session'}: ${i.message}`).join('; ')}`);
+    throw new Error(
+      `Invalid session: ${result.error.issues.map((i) => `${i.path.join('.') || 'session'}: ${i.message}`).join('; ')}`,
+    );
   return result.data;
 }

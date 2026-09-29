@@ -62,9 +62,24 @@ describe('versioned session schema', () => {
     const legacy = structuredClone(current) as Record<string, unknown>;
     delete legacy.sourceImports;
     const audio = legacy.audioSettings as Record<string, unknown>;
-    for (const key of ['musicReference', 'ambientReference', 'fadeInDuration', 'fadeOutDuration']) delete audio[key];
+    for (const key of [
+      'musicReference',
+      'ambientReference',
+      'fadeInDuration',
+      'fadeOutDuration',
+    ])
+      delete audio[key];
     const visual = legacy.visualSettings as Record<string, unknown>;
-    for (const key of ['mediaReference', 'backgroundType', 'opacity', 'blur', 'zoomAmount', 'pulseAmount', 'transitionType']) delete visual[key];
+    for (const key of [
+      'mediaReference',
+      'backgroundType',
+      'opacity',
+      'blur',
+      'zoomAmount',
+      'pulseAmount',
+      'transitionType',
+    ])
+      delete visual[key];
     const parsed = SessionSchema.parse(legacy);
     expect(parsed.sourceImports).toEqual([]);
     expect(parsed.audioSettings.musicReference).toBe('');

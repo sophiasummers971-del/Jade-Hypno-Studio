@@ -22,7 +22,10 @@ import { Autosave, type SaveState } from './storage/autosave';
 import { ErrorNotice, errorDetail } from './components/ErrorNotice';
 import { Modal } from './components/Modal';
 import { ScriptBuilder } from './components/ScriptBuilder';
-import { createSessionFromTemplate, type TemplateId } from './domain/scriptBuilder';
+import {
+  createSessionFromTemplate,
+  type TemplateId,
+} from './domain/scriptBuilder';
 
 type View =
   | 'Home'
@@ -458,7 +461,8 @@ export function App({
           <>
             <h1>New session</h1>
             <p className="lead">
-              Choose a structural starting point. No generated scripts or playback.
+              Choose a structural starting point. No generated scripts or
+              playback.
             </p>
             <form
               onSubmit={(event) => {
@@ -491,16 +495,21 @@ export function App({
                   Structural template
                   <select
                     value={template}
-                    onChange={(event) => setTemplate(event.target.value as TemplateId)}
+                    onChange={(event) =>
+                      setTemplate(event.target.value as TemplateId)
+                    }
                   >
                     <option value="blank">Blank Session</option>
                     <option value="relaxation">Relaxation</option>
                     <option value="immersive-fantasy">Immersive Fantasy</option>
-                    <option value="adult-immersive">Adult Immersive Session</option>
+                    <option value="adult-immersive">
+                      Adult Immersive Session
+                    </option>
                   </select>
                 </label>
                 <p>
-                  Templates create independent block structures only. They do not add generated scripts, playback, or rendering.
+                  Templates create independent block structures only. They do
+                  not add generated scripts, playback, or rendering.
                 </p>
                 <button className="primary" disabled={!title.trim()}>
                   Create session
@@ -515,7 +524,8 @@ export function App({
               <div>
                 <h1>Session editor</h1>
                 <p className="lead">
-                  Create, structure, edit and review the complete session before rendering.
+                  Create, structure, edit and review the complete session before
+                  rendering.
                 </p>
               </div>
               <span role="status" className={`badge save-${saveState}`}>

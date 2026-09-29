@@ -18,15 +18,30 @@ import {
 
 describe('Milestone 2 script builder domain', () => {
   it('creates the default structured session template', () => {
-    const session = createSessionFromTemplate('Example', 'immersive-fantasy', defaultSettings);
+    const session = createSessionFromTemplate(
+      'Example',
+      'immersive-fantasy',
+      defaultSettings,
+    );
     expect(session.blocks.map((block) => block.title)).toEqual([
-      'Preflight','Arrival','Attention','Settling','Deepening','Main Fantasy','Intensification','Release','Return','Clean Exit',
+      'Preflight',
+      'Arrival',
+      'Attention',
+      'Settling',
+      'Deepening',
+      'Main Fantasy',
+      'Intensification',
+      'Release',
+      'Return',
+      'Clean Exit',
     ]);
     expect(new Set(session.blocks.map((block) => block.id)).size).toBe(10);
   });
 
   it('creates a truly blank template', () => {
-    expect(createSessionFromTemplate('Blank', 'blank', defaultSettings).blocks).toEqual([]);
+    expect(
+      createSessionFromTemplate('Blank', 'blank', defaultSettings).blocks,
+    ).toEqual([]);
   });
 
   it('adds, duplicates, reorders and deletes blocks with independent IDs', () => {
@@ -57,32 +72,78 @@ describe('Milestone 2 script builder domain', () => {
 
   it('disabled blocks remain visible but do not contribute to active runtime', () => {
     let session = createSessionFromTemplate('Blank', 'blank', defaultSettings);
-    session = addBlock(session, { ...createBlock('arrival', 'One'), manualDurationOverride: 30 });
-    session = addBlock(session, { ...createBlock('attention', 'Two'), manualDurationOverride: 45, enabled: false });
+    session = addBlock(session, {
+      ...createBlock('arrival', 'One'),
+      manualDurationOverride: 30,
+    });
+    session = addBlock(session, {
+      ...createBlock('attention', 'Two'),
+      manualDurationOverride: 45,
+      enabled: false,
+    });
     const timeline = timelineForSession(session, 150);
-    expect(timeline.map((item) => [item.start, item.end])).toEqual([[0, 30], [30, 30]]);
+    expect(timeline.map((item) => [item.start, item.end])).toEqual([
+      [0, 30],
+      [30, 30],
+    ]);
   });
 
   it('serializes voice, caption, visual, audio and transition configuration', () => {
     let session = createSessionFromTemplate('Config', 'blank', defaultSettings);
     const block = createBlock('custom', 'Configured');
-    block.voiceSettings = { ...block.voiceSettings, voiceId: 'local-voice', rate: 1.2, pitch: -1, volume: 0.7 };
-    block.captionSettings = { ...block.captionSettings, mode: 'emphasis-only', fontSize: 36, alignment: 'right', position: 'top', opacity: 0.8 };
-    block.visualSettings = { ...block.visualSettings, mediaReference: 'local://image', backgroundType: 'image', opacity: 0.9, blur: 2, zoomAmount: 0.4, pulseAmount: 0.2, transitionType: 'fade' };
-    block.audioSettings = { ...block.audioSettings, musicReference: 'local://music', ambientReference: 'local://ambient', musicLevel: 0.4, ambientLevel: 0.25, fadeInDuration: 2, fadeOutDuration: 3 };
+    block.voiceSettings = {
+      ...block.voiceSettings,
+      voiceId: 'local-voice',
+      rate: 1.2,
+      pitch: -1,
+      volume: 0.7,
+    };
+    block.captionSettings = {
+      ...block.captionSettings,
+      mode: 'emphasis-only',
+      fontSize: 36,
+      alignment: 'right',
+      position: 'top',
+      opacity: 0.8,
+    };
+    block.visualSettings = {
+      ...block.visualSettings,
+      mediaReference: 'local://image',
+      backgroundType: 'image',
+      opacity: 0.9,
+      blur: 2,
+      zoomAmount: 0.4,
+      pulseAmount: 0.2,
+      transitionType: 'fade',
+    };
+    block.audioSettings = {
+      ...block.audioSettings,
+      musicReference: 'local://music',
+      ambientReference: 'local://ambient',
+      musicLevel: 0.4,
+      ambientLevel: 0.25,
+      fadeInDuration: 2,
+      fadeOutDuration: 3,
+    };
     block.transitionSettings = { type: 'crossfade', duration: 1.5 };
     session = addBlock(session, block);
     const parsed = SessionSchema.parse(JSON.parse(JSON.stringify(session)));
     expect(parsed.blocks[0].voiceSettings.voiceId).toBe('local-voice');
     expect(parsed.blocks[0].captionSettings.mode).toBe('emphasis-only');
-    expect(parsed.blocks[0].visualSettings.mediaReference).toBe('local://image');
+    expect(parsed.blocks[0].visualSettings.mediaReference).toBe(
+      'local://image',
+    );
     expect(parsed.blocks[0].audioSettings.musicReference).toBe('local://music');
     expect(parsed.blocks[0].transitionSettings.type).toBe('crossfade');
   });
 
   it('keeps private notes separate from narration through serialization', () => {
     let session = createSessionFromTemplate('Blank', 'blank', defaultSettings);
-    session = addBlock(session, { ...createBlock('custom', 'Separate'), narration: 'Speak this.', notes: 'Never render this.' });
+    session = addBlock(session, {
+      ...createBlock('custom', 'Separate'),
+      narration: 'Speak this.',
+      notes: 'Never render this.',
+    });
     const serialized = JSON.stringify(session);
     const parsed = SessionSchema.parse(JSON.parse(serialized));
     expect(parsed.blocks[0].narration).toBe('Speak this.');
@@ -91,7 +152,10 @@ describe('Milestone 2 script builder domain', () => {
   });
 
   it('keeps imported TXT/Markdown reviewable before conversion', () => {
-    const draft = importTextToDraft('# Arrival\nBreathe slowly.\n\n## Return\nOpen your eyes.', 'sample.md');
+    const draft = importTextToDraft(
+      '# Arrival\nBreathe slowly.\n\n## Return\nOpen your eyes.',
+      'sample.md',
+    );
     expect(draft.originalText).toContain('# Arrival');
     expect(draft.confirmed).toBe(false);
     const editedDraft = { ...draft, workingText: '# Arrival\nEdited locally.' };
@@ -99,21 +163,56 @@ describe('Milestone 2 script builder domain', () => {
     const parts = splitImportedText(editedDraft.workingText);
     expect(parts.map((part) => part.title)).toEqual(['Arrival']);
     expect(parts[0].narration).toContain('Edited locally.');
-    const session = appendImportedParts(createSessionFromTemplate('Import', 'blank', defaultSettings), parts, { ...editedDraft, confirmed: true });
+    const session = appendImportedParts(
+      createSessionFromTemplate('Import', 'blank', defaultSettings),
+      parts,
+      { ...editedDraft, confirmed: true },
+    );
     expect(session.sourceImports[0].originalText).toBe(draft.originalText);
   });
 
   it('template instances never mutate the template definition', () => {
     const before = JSON.stringify(sessionTemplates);
-    const session = createSessionFromTemplate('Template', 'relaxation', defaultSettings);
+    const session = createSessionFromTemplate(
+      'Template',
+      'relaxation',
+      defaultSettings,
+    );
     session.blocks[0].title = 'Changed locally';
     expect(JSON.stringify(sessionTemplates)).toBe(before);
   });
 
   it('rejects invalid values and accepts valid editor state', () => {
-    const session = createSessionFromTemplate('Valid', 'immersive-fantasy', defaultSettings);
+    const session = createSessionFromTemplate(
+      'Valid',
+      'immersive-fantasy',
+      defaultSettings,
+    );
     expect(SessionSchema.safeParse(session).success).toBe(true);
-    expect(SessionSchema.safeParse({ ...session, blocks: [{ ...session.blocks[0], captionSettings: { ...session.blocks[0].captionSettings, opacity: 2 } }] }).success).toBe(false);
-    expect(SessionSchema.safeParse({ ...session, blocks: [{ ...session.blocks[0], transitionSettings: { type: 'wipe', duration: 1 } }] }).success).toBe(false);
+    expect(
+      SessionSchema.safeParse({
+        ...session,
+        blocks: [
+          {
+            ...session.blocks[0],
+            captionSettings: {
+              ...session.blocks[0].captionSettings,
+              opacity: 2,
+            },
+          },
+        ],
+      }).success,
+    ).toBe(false);
+    expect(
+      SessionSchema.safeParse({
+        ...session,
+        blocks: [
+          {
+            ...session.blocks[0],
+            transitionSettings: { type: 'wipe', duration: 1 },
+          },
+        ],
+      }).success,
+    ).toBe(false);
   });
 });
