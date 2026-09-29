@@ -612,3 +612,147 @@ dd {
     min-height: 44px;
   }
 }
+
+
+/* Milestone 3 safety and review */
+.header-actions,
+.finding-heading,
+.structural-row,
+.history-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.return-now {
+  border-color: #a96a62;
+  background: #472b2b;
+  color: #ffe0dc;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  min-height: 44px;
+}
+.return-now:hover {
+  background: #5a3434;
+}
+.review-view section {
+  margin: 18px 0;
+}
+.review-summary dl {
+  margin-bottom: 18px;
+}
+.review-complete {
+  border-color: #4f7567;
+  color: #b5e5cf;
+}
+.preflight-grid {
+  display: grid;
+  gap: 12px;
+}
+.preflight-item,
+.structural-row,
+.history-row,
+.finding-card {
+  border: 1px solid #303741;
+  border-radius: 8px;
+  background: #141920;
+  padding: 14px;
+}
+.preflight-item strong {
+  display: block;
+  margin-bottom: 10px;
+}
+.preflight-item button[aria-pressed='true'] {
+  background: #263b35;
+  border-color: #4f7567;
+}
+.grounding-callout {
+  border-left: 4px solid #b6a16b;
+  background: #2c291f;
+  padding: 16px;
+  border-radius: 6px;
+  margin-top: 16px;
+}
+.structural-list,
+.finding-list {
+  display: grid;
+  gap: 10px;
+}
+.structural-row {
+  flex-wrap: wrap;
+}
+.structural-row p {
+  flex-basis: 100%;
+  margin: 0;
+}
+.finding-card {
+  display: grid;
+  gap: 10px;
+}
+.finding-card dl {
+  margin: 0;
+}
+.finding-card p {
+  margin: 0;
+}
+.finding-card mark {
+  background: #675b32;
+  color: #fff2c8;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+.finding-card.severity-info {
+  border-color: #3b4958;
+}
+.finding-card.severity-warning,
+.structural-row.severity-warning {
+  border-color: #756843;
+}
+.finding-card.severity-required-review,
+.structural-row.severity-required-review {
+  border-color: #86564f;
+}
+.context {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.history-row {
+  display: block;
+  opacity: 0.78;
+  margin: 10px 0;
+}
+.review-actions {
+  position: sticky;
+  bottom: 10px;
+  background: #101319ee;
+  border: 1px solid #303741;
+  border-radius: 9px;
+  padding: 12px;
+  z-index: 2;
+}
+.grounding-screen {
+  max-width: 760px;
+}
+.grounding-screen section {
+  background: #171c23;
+  border-color: #3b434d;
+}
+@media (max-width: 560px) {
+  .header-actions {
+    align-items: stretch;
+  }
+  header {
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .header-actions {
+    flex-direction: column;
+  }
+  .finding-heading,
+  .structural-row {
+    align-items: flex-start;
+  }
+  .review-actions {
+    bottom: 4px;
+  }
+}
