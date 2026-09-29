@@ -25,7 +25,21 @@ describe('Milestone 3 review metadata contract', () => {
     source.safetyReview.status = 'reviewed';
     source.safetyReview.reviewerAcknowledged = true;
     source.safetyReview.scannerVersion = '1.0.0';
-    source.safetyReview.findings = [{ id: 'old-review' }];
+    source.safetyReview.findings = [
+      {
+        id: 'old-review',
+        ruleId: 'old-rule',
+        blockId: source.id,
+        severity: 'warning',
+        category: 'old-category',
+        matchedText: 'old text',
+        startOffset: 0,
+        endOffset: 8,
+        status: 'reviewed',
+        note: '',
+        present: true,
+      },
+    ];
 
     const duplicate = copySession(source as Session) as Session & {
       safetyReview: Record<string, unknown>;
