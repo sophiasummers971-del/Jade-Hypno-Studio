@@ -72,6 +72,29 @@ describe('MediaResolver', () => {
     resolver.dispose();
   });
 
+  it('persists local narration audio and revokes its object URL', async () => {
+    const resolver = new MediaResolver(indexedDB);
+    const asset = await resolver.importAudio(
+      new File(['audio'], 'voice.mp3', { type: 'audio/mpeg', lastModified: 7 }),
+    );
+    expect(asset.kind).toBe('audio');
+    const resolved = await resolver.resolveAudio(asset.id);
+    expect(resolved?.asset.name).toBe('voice.mp3');
+    expect(resolved?.url).toBe('blob:test');
+    resolver.revoke(asset.id);
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:test');
+    resolver.dispose();
+  });
+
+  it('rejects unsupported narration media without creating an object URL', async () => {
+    const resolver = new MediaResolver(indexedDB);
+    await expect(
+      resolver.importAudio(new File(['x'], 'voice.txt', { type: 'text/plain' })),
+    ).rejects.toThrow('Unsupported narration audio');
+    expect(createObjectURL).not.toHaveBeenCalled();
+    resolver.dispose();
+  });
+
   it('returns null for a missing asset', async () => {
     expect(await new MediaResolver(indexedDB).resolve('missing')).toBeNull();
   });
