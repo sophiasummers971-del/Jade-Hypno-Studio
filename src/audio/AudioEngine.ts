@@ -30,6 +30,7 @@ export class AudioEngine {
     if (this.snapshot.state === 'playing' || this.snapshot.state === 'loading') return;
     const token = ++this.token; this.startedAt = performance.now(); this.set({ state: 'loading', currentBlockId: block.id, error: null });
     try {
+      this.set({ state: 'playing' });
       await this.speech.speak(parseNarration(block.narration), { ...block.voiceSettings, volume: block.voiceSettings.volume * block.audioSettings.narrationLevel });
       if (token === this.token) this.set({ state: 'idle', currentBlockId: null, elapsedSeconds: (performance.now() - this.startedAt) / 1000 });
     } catch (error) { if (token === this.token) this.set({ state: 'error', error: error instanceof Error ? error.message : 'Audio playback failed.' }); }
