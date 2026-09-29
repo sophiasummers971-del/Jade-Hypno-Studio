@@ -130,6 +130,9 @@ export function AudioPanel({
     voices.length &&
     !voices.some((v) => v.id === activeBlock.voiceSettings.voiceId),
   );
+  const sessionNarrationAvailable =
+    speechSupported ||
+    session.blocks.filter((block) => block.enabled).every((block) => Boolean(block.audioSettings.narrationReference));
   const requiredReview = session.safetyReview.findings.some(
     (f) =>
       f.present &&
@@ -431,7 +434,7 @@ export function AudioPanel({
           <button
             className="primary"
             disabled={
-              (!speechSupported && !session.blocks.some((block) => block.audioSettings.narrationReference)) ||
+              !sessionNarrationAvailable ||
               playback.state === 'playing' ||
               playback.state === 'loading'
             }
