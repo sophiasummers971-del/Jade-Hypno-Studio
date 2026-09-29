@@ -8,6 +8,7 @@ export class AudioMixer {
       audio: HTMLAudioElement;
       gain: GainNode;
       source: MediaElementAudioSourceNode;
+      settle?: (error?: Error) => void;
     }
   >();
   private levels: AudioLevels = {
@@ -59,6 +60,44 @@ export class AudioMixer {
       );
     }
   }
+  async playToEnd(track: LocalAudioTrack, fadeIn = 0): Promise<void> {
+    await this.ready();
+    this.stop(track.id);
+    const audio = new Audio(track.url);
+    audio.preload = 'auto';
+    const source = this.context!.createMediaElementSource(audio);
+    const gain = this.context!.createGain();
+    const level = this.levels[track.kind];
+    const now = this.context!.currentTime;
+    gain.gain.setValueAtTime(fadeIn > 0 ? 0 : level, now);
+    if (fadeIn > 0) gain.gain.linearRampToValueAtTime(level, now + fadeIn);
+    source.connect(gain).connect(this.context!.destination);
+    await new Promise<void>((resolve, reject) => {
+      let settled = false;
+      const settle = (error?: Error) => {
+        if (settled) return;
+        settled = true;
+        error ? reject(error) : resolve();
+      };
+      this.active.set(track.id, { audio, gain, source, settle });
+      audio.addEventListener('ended', () => {
+        settle();
+        this.stop(track.id);
+      }, { once: true });
+      audio.addEventListener('error', () => {
+        const error = new Error('The local narration audio could not be decoded.');
+        settle(error);
+        this.stop(track.id);
+      }, { once: true });
+      void audio.play().catch(() => {
+        const error = new Error(
+          'Playback was blocked or the local narration audio could not be decoded. Tap Play again and check the file format.',
+        );
+        settle(error);
+        this.stop(track.id);
+      });
+    });
+  }
   pauseAll() {
     this.active.forEach(({ audio }) => audio.pause());
   }
@@ -75,6 +114,7 @@ export class AudioMixer {
     if (!item) return;
     item.audio.pause();
     item.audio.currentTime = 0;
+    item.settle?.();
     item.source.disconnect();
     item.gain.disconnect();
     this.active.delete(id);
