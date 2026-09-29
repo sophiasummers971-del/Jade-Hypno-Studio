@@ -46,6 +46,7 @@ export const AudioSettingsSchema = z
     ambientReference: text(4096).default(''),
     musicLevel: level,
     ambientLevel: level,
+    effectsLevel: level.default(0.3),
     fadeInDuration: z.number().finite().min(0).max(300).default(0),
     fadeOutDuration: z.number().finite().min(0).max(300).default(0),
   })
