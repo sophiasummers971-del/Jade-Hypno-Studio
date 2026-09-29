@@ -24,6 +24,7 @@ import { Modal } from './components/Modal';
 import { ScriptBuilder } from './components/ScriptBuilder';
 import { SessionReview } from './components/SessionReview';
 import { GroundingMode } from './components/GroundingMode';
+import { AudioPanel } from './components/AudioPanel';
 import { invalidateReview, scanSession } from './safety/reviewEngine';
 import { RETURN_NOW_EVENT, returnNow } from './safety/returnNow';
 import {
@@ -287,14 +288,14 @@ export function App({
         </nav>
         <div className="sidebar-foot">
           <span className="dot" /> Local & private
-          <p>Safety & Review · Milestone 3</p>
+          <p>Audio Engine · Milestone 4</p>
         </div>
       </aside>
       <main aria-busy={busy}>
         <header>
           <p className="eyebrow">YOUR SPACE. YOUR CONTROL.</p>
           <div className="header-actions">
-            <span className="badge">SAFETY REVIEW / 03</span>
+            <span className="badge">AUDIO ENGINE / 04</span>
             <button
               type="button"
               className="return-now"
@@ -346,8 +347,7 @@ export function App({
               <section>
                 <h2>Foundation only</h2>
                 <p>
-                  Session metadata and local saving are available. Playback,
-                  voices and rendering come later.
+                  Local narration and layered audio preview are available. Visual and final video rendering come later.
                 </p>
                 <button
                   onClick={() => navigate('About / Safety')}
@@ -679,6 +679,7 @@ export function App({
               onChange={edit}
               focusBlockId={reviewFocusBlockId}
             />
+            <AudioPanel session={session} onChange={edit} />
             <details className="metadata">
               <summary>Session metadata</summary>
               <dl>
@@ -791,7 +792,7 @@ export function App({
                     </label>
                   </div>
                   <label>
-                    TTS voice identifier (placeholder)
+                    Default TTS voice identifier
                     <input
                       maxLength={256}
                       value={draftSettings.defaultVoiceId}
@@ -804,7 +805,7 @@ export function App({
                     />
                   </label>
                   <p className="hint">
-                    Stored as a preference only. No voice service is connected.
+                    Used when a matching device voice is available. Voices remain device-local.
                   </p>
                   <label>
                     Default export directory (placeholder)
@@ -895,9 +896,7 @@ export function App({
                 therapy service.
               </p>
               <p>
-                This build adds a local, rules-based pre-render review layer to
-                session structure and local data. It does not play hypnosis,
-                generate scripts, connect to AI or voice services, or render
+                This build adds local narration and layered audio preview above the safety review layer. It does not generate scripts, connect to remote voice services, or render
                 media.
               </p>
             </section>
