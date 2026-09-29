@@ -32,16 +32,16 @@ export function PlayerView({
   onExit: () => void;
   onRecordNotes?: (durationSeconds: number) => void;
 }) {
+  const resolver = useMemo(() => new MediaResolver(), []);
   const audio = useMemo(
-    () => new AudioEngine(new BrowserSpeechEngine(), new AudioMixer()),
-    [],
+    () => new AudioEngine(new BrowserSpeechEngine(), new AudioMixer(), resolver),
+    [resolver],
   );
   const visualEngine = useMemo(() => new VisualEngine(audio), [audio]);
   const player = useMemo(
     () => new SessionPlayer(audio, visualEngine),
     [audio, visualEngine],
   );
-  const resolver = useMemo(() => new MediaResolver(), []);
   const [snapshot, setSnapshot] = useState(initial);
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [mediaKind, setMediaKind] = useState<'image' | 'video' | 'gif' | null>(
