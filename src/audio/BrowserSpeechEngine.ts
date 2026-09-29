@@ -6,7 +6,6 @@ export class BrowserSpeechEngine implements SpeechEngine {
   private timer: number | null = null;
   private cancelled = false;
   private resumePause: (() => void) | null = null;
-  private paused = false;
 
   constructor(private readonly host: Window = window) {
     this.synth = 'speechSynthesis' in host ? host.speechSynthesis : null;
@@ -64,18 +63,15 @@ export class BrowserSpeechEngine implements SpeechEngine {
     });
   }
   pause() {
-    this.paused = true;
     this.synth?.pause();
     if (this.timer !== null) { this.host.clearTimeout(this.timer); this.timer = null; }
   }
   resume() {
-    this.paused = false;
     this.synth?.resume();
     if (this.resumePause && this.timer === null) this.timer = this.host.setTimeout(this.resumePause, 0);
   }
   stop() {
     this.cancelled = true;
-    this.paused = false;
     if (this.timer !== null) this.host.clearTimeout(this.timer);
     this.timer = null;
     this.resumePause = null;
