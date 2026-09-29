@@ -1,0 +1,47 @@
+name: Milestone 7 verification
+on:
+  push:
+    branches:
+      - codex/milestone-7-experiment-lab
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run test
+      - name: Format M7 sources
+        run: |
+          npm run format
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add .
+            git commit -m "M7: apply repository formatting"
+            git push origin HEAD:codex/milestone-7-experiment-lab
+          fi
+      - run: npm run format:check
+      - run: npm run schema:check
+      - run: npm run build
+      - run: npm run check:dist
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - name: Create and verify Milestone 7 bundle
+        run: |
+          git bundle create jade-hypno-studio-m7.bundle codex/milestone-7-experiment-lab
+          git bundle verify jade-hypno-studio-m7.bundle
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jade-hypno-studio-m7-bundle
+          path: jade-hypno-studio-m7.bundle
+          if-no-files-found: error
