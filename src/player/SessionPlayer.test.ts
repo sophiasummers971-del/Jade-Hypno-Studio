@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { AudioEngine } from '../audio/AudioEngine';
+import { AudioEngine } from '../audio/AudioEngine';
+import type { AudioMixer } from '../audio/AudioMixer';
+import type { SpeechEngine } from '../audio/SpeechEngine';
 import type { AudioEngineSnapshot } from '../audio/types';
 import {
   createBlock,
@@ -32,6 +34,53 @@ function harness() {
   return { audio, emit: (s: AudioEngineSnapshot) => listener(s) };
 }
 describe('SessionPlayer', () => {
+  it('does not complete the player until local narration audio ends', async () => {
+    let finish!: () => void;
+    const speech = {
+      supported: true,
+      voices: vi.fn(async () => []),
+      speak: vi.fn(async () => {}),
+      pause: vi.fn(),
+      resume: vi.fn(),
+      stop: vi.fn(),
+    } satisfies SpeechEngine;
+    const mix = {
+      ready: vi.fn(async () => {}),
+      setLevels: vi.fn(),
+      play: vi.fn(async () => {}),
+      playToEnd: vi.fn(() => new Promise<void>((resolve) => { finish = resolve; })),
+      pauseAll: vi.fn(),
+      resumeAll: vi.fn(async () => {}),
+      stopAll: vi.fn(),
+      fadeOutAll: vi.fn(async () => {}),
+    } as unknown as AudioMixer;
+    const media = {
+      resolveAudio: vi.fn(async () => ({
+        asset: { id: 'audio:test', name: 'voice.mp3', mimeType: 'audio/mpeg', kind: 'audio' as const, size: 4 },
+        url: 'blob:narration',
+      })),
+      revoke: vi.fn(),
+    };
+    const audio = new AudioEngine(speech, mix, media as never);
+    const player = new SessionPlayer(audio);
+    const session = createSessionFromTemplate('x', 'blank', defaultSettings);
+    const block = createBlock();
+    block.narration = 'caption text';
+    block.audioSettings.narrationReference = 'audio:test';
+    session.blocks = [block];
+    let state = '';
+    player.subscribe((snapshot) => { state = snapshot.state; });
+    player.prepare(session);
+    const running = player.start();
+    await vi.waitFor(() => expect(mix.playToEnd).toHaveBeenCalledOnce());
+    expect(state).toBe('playing');
+    finish();
+    await running;
+    expect(state).toBe('completed');
+    expect(speech.speak).not.toHaveBeenCalled();
+    player.dispose();
+    audio.dispose();
+  });
   it('moves deterministically through ready playing paused resumed and completed', async () => {
     const h = harness(),
       p = new SessionPlayer(h.audio as unknown as AudioEngine);
