@@ -22,7 +22,7 @@ export class AudioEngine {
       clearTemporarySessionState: () => this.reset(),
     });
   }
-  subscribe(listener: Listener) { this.listeners.add(listener); listener(this.snapshot); return () => this.listeners.delete(listener); }
+  subscribe(listener: Listener) { this.listeners.add(listener); listener(this.snapshot); return () => { this.listeners.delete(listener); }; }
   private set(change: Partial<AudioEngineSnapshot>) { this.snapshot = { ...this.snapshot, ...change }; this.listeners.forEach((l) => l(this.snapshot)); }
   addTrack(track: LocalAudioTrack) { this.tracks = [...this.tracks.filter((x) => x.kind !== track.kind), track]; }
   removeTrack(kind: LocalAudioTrack['kind']) { this.tracks.filter((x) => x.kind === kind).forEach((x) => URL.revokeObjectURL(x.url)); this.tracks = this.tracks.filter((x) => x.kind !== kind); }
