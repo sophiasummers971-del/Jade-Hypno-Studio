@@ -5,6 +5,7 @@ import type { SpeechEngine } from './SpeechEngine';
 import type { NarrationPart, SpeechSettings } from './types';
 import { newSession, defaultSettings } from '../domain/schema';
 import { createBlock } from '../domain/scriptBuilder';
+import { returnNow } from '../safety/returnNow';
 
 class FakeSpeech implements SpeechEngine {
   supported = true;
@@ -90,4 +91,5 @@ describe('AudioEngine', () => {
     await p;
     e.dispose();
   });
+ it('RETURN NOW stops speech and mixer through the permanent M3 contract',async()=>{const s=new FakeSpeech(),m=mixer(),e=new AudioEngine(s,m);await returnNow();expect(s.stopped).toBeGreaterThan(0);expect(m.stopAll).toHaveBeenCalled();e.dispose()});
 });
