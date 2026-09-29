@@ -507,6 +507,166 @@
         "notes": {
           "type": "string",
           "maxLength": 10000
+        },
+        "reviewedAt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "lastScannedAt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "scannerVersion": {
+          "type": "string",
+          "maxLength": 64,
+          "default": ""
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 512
+              },
+              "ruleId": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "blockId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+              },
+              "severity": {
+                "type": "string",
+                "enum": [
+                  "info",
+                  "warning",
+                  "required-review"
+                ]
+              },
+              "category": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "matchedText": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "startOffset": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "endOffset": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "unresolved",
+                  "reviewed",
+                  "dismissed",
+                  "edited"
+                ]
+              },
+              "note": {
+                "type": "string",
+                "maxLength": 5000,
+                "default": ""
+              },
+              "present": {
+                "type": "boolean",
+                "default": true
+              }
+            },
+            "required": [
+              "id",
+              "ruleId",
+              "blockId",
+              "severity",
+              "category",
+              "matchedText",
+              "startOffset",
+              "endOffset",
+              "status"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 2000,
+          "default": []
+        },
+        "structuralChecks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 256
+              },
+              "severity": {
+                "type": "string",
+                "enum": [
+                  "info",
+                  "warning",
+                  "required-review"
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pass",
+                  "missing"
+                ]
+              },
+              "explanation": {
+                "type": "string",
+                "maxLength": 2000
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "severity",
+              "status",
+              "explanation"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 100,
+          "default": []
+        },
+        "reviewerAcknowledged": {
+          "type": "boolean",
+          "default": false
+        },
+        "unresolvedCount": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
         }
       },
       "required": [
