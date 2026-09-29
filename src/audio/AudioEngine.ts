@@ -39,7 +39,7 @@ export class AudioEngine {
     if (this.snapshot.state === 'playing' || this.snapshot.state === 'loading') return;
     const token = ++this.token; this.startedAt = performance.now(); this.set({ state: 'loading', error: null });
     try {
-      this.mixer.setLevels({ narration: session.audioSettings.narrationLevel, music: session.audioSettings.musicLevel, ambient: session.audioSettings.ambientLevel });
+      this.mixer.setLevels({ narration: session.audioSettings.narrationLevel, music: session.audioSettings.musicLevel, ambient: session.audioSettings.ambientLevel, effects: session.audioSettings.effectsLevel });
       await this.mixer.ready();
       for (const track of this.tracks.filter((x) => x.kind === 'music' || x.kind === 'ambient')) await this.mixer.play(track, session.audioSettings.fadeInDuration);
       this.set({ state: 'playing' });
