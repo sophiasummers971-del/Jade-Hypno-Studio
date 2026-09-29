@@ -755,3 +755,15 @@ dd {
     bottom: 4px;
   }
 }
+
+/* Milestone 4 audio engine */
+.audio-panel { margin-top: 28px; border: 1px solid #34404b; border-radius: 10px; padding: 18px; background: #121820; }
+.audio-heading, .audio-controls, .media-row { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+.audio-heading { justify-content:space-between; }
+.audio-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.audio-grid > section, .full-preview { border:1px solid #2d353f; border-radius:8px; padding:16px; background:#171c23; }
+.audio-panel label { display:grid; gap:7px; margin:12px 0; }
+.audio-controls button, .media-row button { min-height:44px; min-width:92px; }
+.full-preview { margin-top:16px; }
+.audio-panel code { color:#d8c89d; }
+@media (max-width:720px) { .audio-grid { grid-template-columns:1fr; } .audio-controls button { flex:1 1 42%; } .audio-heading { align-items:flex-start; } }
