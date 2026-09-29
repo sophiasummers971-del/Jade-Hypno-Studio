@@ -347,7 +347,8 @@ export function App({
               <section>
                 <h2>Foundation only</h2>
                 <p>
-                  Local narration and layered audio preview are available. Visual and final video rendering come later.
+                  Local narration and layered audio preview are available.
+                  Visual and final video rendering come later.
                 </p>
                 <button
                   onClick={() => navigate('About / Safety')}
@@ -805,7 +806,8 @@ export function App({
                     />
                   </label>
                   <p className="hint">
-                    Used when a matching device voice is available. Voices remain device-local.
+                    Used when a matching device voice is available. Voices
+                    remain device-local.
                   </p>
                   <label>
                     Default export directory (placeholder)
@@ -896,8 +898,9 @@ export function App({
                 therapy service.
               </p>
               <p>
-                This build adds local narration and layered audio preview above the safety review layer. It does not generate scripts, connect to remote voice services, or render
-                media.
+                This build adds local narration and layered audio preview above
+                the safety review layer. It does not generate scripts, connect
+                to remote voice services, or render media.
               </p>
             </section>
             <section>

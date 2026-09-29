@@ -12,7 +12,11 @@ export function parseNarration(input: string): NarrationPart[] {
     const before = input.slice(cursor, index).trim();
     if (before) parts.push({ type: 'speech', text: before });
     const seconds = Number(match[1]);
-    if (Number.isFinite(seconds) && seconds >= 0 && seconds <= MAX_PAUSE_SECONDS)
+    if (
+      Number.isFinite(seconds) &&
+      seconds >= 0 &&
+      seconds <= MAX_PAUSE_SECONDS
+    )
       parts.push({ type: 'pause', seconds });
     cursor = index + match[0].length;
   }
@@ -21,7 +25,10 @@ export function parseNarration(input: string): NarrationPart[] {
   return parts;
 }
 
-export function estimateNarrationSeconds(text: string, wordsPerMinute = 150): number {
+export function estimateNarrationSeconds(
+  text: string,
+  wordsPerMinute = 150,
+): number {
   return parseNarration(text).reduce((total, part) => {
     if (part.type === 'pause') return total + part.seconds;
     const words = part.text.trim() ? part.text.trim().split(/\s+/).length : 0;
@@ -30,5 +37,7 @@ export function estimateNarrationSeconds(text: string, wordsPerMinute = 150): nu
 }
 
 export function playableBlocks(session: Session): SessionBlock[] {
-  return session.blocks.filter((block) => block.enabled && Boolean(block.narration.trim()));
+  return session.blocks.filter(
+    (block) => block.enabled && Boolean(block.narration.trim()),
+  );
 }
