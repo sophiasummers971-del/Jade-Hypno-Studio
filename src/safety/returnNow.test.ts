@@ -36,7 +36,10 @@ describe('RETURN NOW contract', () => {
         order.push('clear');
       },
     });
-    const hostileSessionData = { returnNow: false, RETURN_NOW_ACTION: 'disabled' };
+    const hostileSessionData = {
+      returnNow: false,
+      RETURN_NOW_ACTION: 'disabled',
+    };
     expect(hostileSessionData.returnNow).toBe(false);
     await returnNow();
     expect(order).toEqual([
@@ -48,7 +51,10 @@ describe('RETURN NOW contract', () => {
       'ordinary-interface',
     ]);
     expect(pause).toHaveBeenCalled();
-    expect(RETURN_NOW_ACTION).toEqual({ id: 'return-now', label: 'RETURN NOW' });
+    expect(RETURN_NOW_ACTION).toEqual({
+      id: 'return-now',
+      label: 'RETURN NOW',
+    });
     expect(Object.isFrozen(RETURN_NOW_ACTION)).toBe(true);
   });
 });
