@@ -138,7 +138,9 @@ export class AudioEngine {
       throw new Error('Local narration media is unavailable in this player.');
     const resolved = await this.media.resolveAudio(reference);
     if (!resolved)
-      throw new Error('The local narration audio file is missing from this device.');
+      throw new Error(
+        'The local narration audio file is missing from this device.',
+      );
     try {
       await this.mixer.playToEnd({
         id: `narration:${block.id}`,

@@ -54,10 +54,21 @@ describe('AudioEngine', () => {
     let finish!: () => void;
     const speech = new FakeSpeech();
     const mix = mixer();
-    mix.playToEnd = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
+    mix.playToEnd = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
     const media = {
       resolveAudio: vi.fn(async () => ({
-        asset: { id: 'audio:test', name: 'voice.mp3', mimeType: 'audio/mpeg', kind: 'audio' as const, size: 4 },
+        asset: {
+          id: 'audio:test',
+          name: 'voice.mp3',
+          mimeType: 'audio/mpeg',
+          kind: 'audio' as const,
+          size: 4,
+        },
         url: 'blob:narration',
       })),
       revoke: vi.fn(),
@@ -67,7 +78,9 @@ describe('AudioEngine', () => {
     block.narration = 'caption transcript';
     block.audioSettings.narrationReference = 'audio:test';
     let state = '';
-    engine.subscribe((snapshot) => { state = snapshot.state; });
+    engine.subscribe((snapshot) => {
+      state = snapshot.state;
+    });
     const playing = engine.playBlock(block);
     await vi.waitFor(() => expect(mix.playToEnd).toHaveBeenCalledOnce());
     expect(speech.calls).toHaveLength(0);
@@ -85,7 +98,9 @@ describe('AudioEngine', () => {
     const block = createBlock();
     block.audioSettings.narrationReference = 'audio:missing';
     let error: string | null = null;
-    engine.subscribe((snapshot) => { error = snapshot.error; });
+    engine.subscribe((snapshot) => {
+      error = snapshot.error;
+    });
     await engine.playBlock(block);
     expect(speech.calls).toHaveLength(0);
     expect(error).toMatch(/missing from this device/);
@@ -95,10 +110,21 @@ describe('AudioEngine', () => {
     const speech = new FakeSpeech();
     const mix = mixer();
     let finish!: () => void;
-    mix.playToEnd = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
+    mix.playToEnd = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
     const media = {
       resolveAudio: vi.fn(async () => ({
-        asset: { id: 'audio:test', name: 'voice.mp3', mimeType: 'audio/mpeg', kind: 'audio' as const, size: 4 },
+        asset: {
+          id: 'audio:test',
+          name: 'voice.mp3',
+          mimeType: 'audio/mpeg',
+          kind: 'audio' as const,
+          size: 4,
+        },
         url: 'blob:narration',
       })),
       revoke: vi.fn(),

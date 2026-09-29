@@ -34,7 +34,8 @@ export function PlayerView({
 }) {
   const resolver = useMemo(() => new MediaResolver(), []);
   const audio = useMemo(
-    () => new AudioEngine(new BrowserSpeechEngine(), new AudioMixer(), resolver),
+    () =>
+      new AudioEngine(new BrowserSpeechEngine(), new AudioMixer(), resolver),
     [resolver],
   );
   const visualEngine = useMemo(() => new VisualEngine(audio), [audio]);

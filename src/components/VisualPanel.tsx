@@ -31,7 +31,8 @@ export function VisualPanel({
 }) {
   const resolver = useMemo(() => new MediaResolver(), []);
   const audio = useMemo(
-    () => new AudioEngine(new BrowserSpeechEngine(), new AudioMixer(), resolver),
+    () =>
+      new AudioEngine(new BrowserSpeechEngine(), new AudioMixer(), resolver),
     [resolver],
   );
   const engine = useMemo(() => new VisualEngine(audio), [audio]);
@@ -44,7 +45,9 @@ export function VisualPanel({
   const video = useRef<HTMLVideoElement>(null);
   const narrationAvailable =
     audio.speech.supported ||
-    session.blocks.filter((block) => block.enabled).every((block) => Boolean(block.audioSettings.narrationReference));
+    session.blocks
+      .filter((block) => block.enabled)
+      .every((block) => Boolean(block.audioSettings.narrationReference));
   const current =
     session.blocks.find((b) => b.id === snapshot.currentBlockId) ??
     session.blocks.find((b) => b.enabled) ??

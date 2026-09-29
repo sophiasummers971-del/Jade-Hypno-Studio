@@ -248,15 +248,10 @@
                 "maximum": 1
               },
               "narrationReference": {
-
                 "type": "string",
-
                 "maxLength": 4096,
-
                 "default": ""
-
               },
-
               "musicReference": {
                 "type": "string",
                 "maxLength": 4096,
@@ -465,15 +460,10 @@
           "maximum": 1
         },
         "narrationReference": {
-
           "type": "string",
-
           "maxLength": 4096,
-
           "default": ""
-
         },
-
         "musicReference": {
           "type": "string",
           "maxLength": 4096,

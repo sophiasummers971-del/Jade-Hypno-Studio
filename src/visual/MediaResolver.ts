@@ -1,4 +1,10 @@
-import type { AudioAsset, ResolvedAudio, ResolvedMedia, VisualAsset, VisualMediaKind } from './types';
+import type {
+  AudioAsset,
+  ResolvedAudio,
+  ResolvedMedia,
+  VisualAsset,
+  VisualMediaKind,
+} from './types';
 
 const DB = 'jade-hypno-studio-media';
 const STORE = 'assets';
@@ -93,8 +99,13 @@ export class MediaResolver {
     };
   }
   async importAudio(file: File): Promise<Omit<AudioAsset, 'blob'>> {
-    if (!file.type.toLowerCase().startsWith('audio/') && !audioPattern.test(file.name))
-      throw new Error('Unsupported narration audio. Choose MP3, WAV, OGG, M4A, or AAC.');
+    if (
+      !file.type.toLowerCase().startsWith('audio/') &&
+      !audioPattern.test(file.name)
+    )
+      throw new Error(
+        'Unsupported narration audio. Choose MP3, WAV, OGG, M4A, or AAC.',
+      );
     if (file.size > MAX_MEDIA_BYTES)
       throw new Error('Narration audio exceeds the 128 MiB local asset limit.');
     const id = `audio:${file.name}:${file.size}:${file.lastModified}`;
@@ -110,7 +121,13 @@ export class MediaResolver {
       store.put(asset, id);
       done(undefined);
     });
-    return { id, name: asset.name, mimeType: asset.mimeType, kind: 'audio', size: asset.size };
+    return {
+      id,
+      name: asset.name,
+      mimeType: asset.mimeType,
+      kind: 'audio',
+      size: asset.size,
+    };
   }
   async resolveAudio(id: string): Promise<ResolvedAudio | null> {
     if (!id) return null;
@@ -123,7 +140,13 @@ export class MediaResolver {
         const url = URL.createObjectURL(asset.blob);
         this.urls.set(id, url);
         done({
-          asset: { id: asset.id, name: asset.name, mimeType: asset.mimeType, kind: 'audio', size: asset.size },
+          asset: {
+            id: asset.id,
+            name: asset.name,
+            mimeType: asset.mimeType,
+            kind: 'audio',
+            size: asset.size,
+          },
           url,
         });
       };

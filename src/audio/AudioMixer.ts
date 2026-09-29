@@ -77,18 +77,29 @@ export class AudioMixer {
       const settle = (error?: Error) => {
         if (settled) return;
         settled = true;
-        error ? reject(error) : resolve();
+        if (error) reject(error);
+        else resolve();
       };
       this.active.set(track.id, { audio, gain, source, settle });
-      audio.addEventListener('ended', () => {
-        settle();
-        this.stop(track.id);
-      }, { once: true });
-      audio.addEventListener('error', () => {
-        const error = new Error('The local narration audio could not be decoded.');
-        settle(error);
-        this.stop(track.id);
-      }, { once: true });
+      audio.addEventListener(
+        'ended',
+        () => {
+          settle();
+          this.stop(track.id);
+        },
+        { once: true },
+      );
+      audio.addEventListener(
+        'error',
+        () => {
+          const error = new Error(
+            'The local narration audio could not be decoded.',
+          );
+          settle(error);
+          this.stop(track.id);
+        },
+        { once: true },
+      );
       void audio.play().catch(() => {
         const error = new Error(
           'Playback was blocked or the local narration audio could not be decoded. Tap Play again and check the file format.',

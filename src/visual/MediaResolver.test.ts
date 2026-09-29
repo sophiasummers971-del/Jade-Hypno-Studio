@@ -89,7 +89,9 @@ describe('MediaResolver', () => {
   it('rejects unsupported narration media without creating an object URL', async () => {
     const resolver = new MediaResolver(indexedDB);
     await expect(
-      resolver.importAudio(new File(['x'], 'voice.txt', { type: 'text/plain' })),
+      resolver.importAudio(
+        new File(['x'], 'voice.txt', { type: 'text/plain' }),
+      ),
     ).rejects.toThrow('Unsupported narration audio');
     expect(createObjectURL).not.toHaveBeenCalled();
     resolver.dispose();

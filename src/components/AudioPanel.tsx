@@ -37,7 +37,8 @@ export function AudioPanel({
     null;
   const resolver = useMemo(() => new MediaResolver(), []);
   const engine = useMemo(
-    () => new AudioEngine(new BrowserSpeechEngine(), new AudioMixer(), resolver),
+    () =>
+      new AudioEngine(new BrowserSpeechEngine(), new AudioMixer(), resolver),
     [resolver],
   );
   const [playback, setPlayback] = useState(initial);
@@ -48,10 +49,13 @@ export function AudioPanel({
   const exporter = useMemo(() => new BrowserAudioExporter(), []);
 
   useEffect(() => engine.subscribe(setPlayback), [engine]);
-  useEffect(() => () => {
-    engine.dispose();
-    resolver.dispose();
-  }, [engine, resolver]);
+  useEffect(
+    () => () => {
+      engine.dispose();
+      resolver.dispose();
+    },
+    [engine, resolver],
+  );
   useEffect(() => {
     if (!speechSupported) return;
     void engine.speech
@@ -119,9 +123,15 @@ export function AudioPanel({
           narrationReference: asset.id,
         },
       });
-      setNotice(`${asset.name} stored locally as narration for this block. Nothing was uploaded.`);
+      setNotice(
+        `${asset.name} stored locally as narration for this block. Nothing was uploaded.`,
+      );
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Narration audio import failed.');
+      setNotice(
+        error instanceof Error
+          ? error.message
+          : 'Narration audio import failed.',
+      );
     }
   };
 
@@ -132,7 +142,9 @@ export function AudioPanel({
   );
   const sessionNarrationAvailable =
     speechSupported ||
-    session.blocks.filter((block) => block.enabled).every((block) => Boolean(block.audioSettings.narrationReference));
+    session.blocks
+      .filter((block) => block.enabled)
+      .every((block) => Boolean(block.audioSettings.narrationReference));
   const requiredReview = session.safetyReview.findings.some(
     (f) =>
       f.present &&
@@ -173,7 +185,9 @@ export function AudioPanel({
         <section>
           <h3>Narration</h3>
           <input
-            ref={(el) => { inputs.current.narration = el; }}
+            ref={(el) => {
+              inputs.current.narration = el;
+            }}
             className="sr-only"
             type="file"
             accept={accept}
@@ -184,14 +198,23 @@ export function AudioPanel({
             }}
           />
           <div className="media-row">
-            <button disabled={!activeBlock} onClick={() => inputs.current.narration?.click()}>
+            <button
+              disabled={!activeBlock}
+              onClick={() => inputs.current.narration?.click()}
+            >
               Choose local narration
             </button>
             <button
               disabled={!activeBlock?.audioSettings.narrationReference}
-              onClick={() => activeBlock && patchBlock({
-                audioSettings: { ...activeBlock.audioSettings, narrationReference: '' },
-              })}
+              onClick={() =>
+                activeBlock &&
+                patchBlock({
+                  audioSettings: {
+                    ...activeBlock.audioSettings,
+                    narrationReference: '',
+                  },
+                })
+              }
             >
               Use TTS instead
             </button>
@@ -283,7 +306,8 @@ export function AudioPanel({
               className="primary"
               disabled={
                 !activeBlock ||
-                (!speechSupported && !activeBlock.audioSettings.narrationReference) ||
+                (!speechSupported &&
+                  !activeBlock.audioSettings.narrationReference) ||
                 playback.state === 'playing' ||
                 playback.state === 'loading'
               }
@@ -310,7 +334,11 @@ export function AudioPanel({
               Stop
             </button>
             <button
-              disabled={!activeBlock || (!speechSupported && !activeBlock.audioSettings.narrationReference)}
+              disabled={
+                !activeBlock ||
+                (!speechSupported &&
+                  !activeBlock.audioSettings.narrationReference)
+              }
               onClick={() =>
                 activeBlock && void engine.restartBlock(activeBlock)
               }

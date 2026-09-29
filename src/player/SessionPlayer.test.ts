@@ -48,7 +48,12 @@ describe('SessionPlayer', () => {
       ready: vi.fn(async () => {}),
       setLevels: vi.fn(),
       play: vi.fn(async () => {}),
-      playToEnd: vi.fn(() => new Promise<void>((resolve) => { finish = resolve; })),
+      playToEnd: vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            finish = resolve;
+          }),
+      ),
       pauseAll: vi.fn(),
       resumeAll: vi.fn(async () => {}),
       stopAll: vi.fn(),
@@ -56,7 +61,13 @@ describe('SessionPlayer', () => {
     } as unknown as AudioMixer;
     const media = {
       resolveAudio: vi.fn(async () => ({
-        asset: { id: 'audio:test', name: 'voice.mp3', mimeType: 'audio/mpeg', kind: 'audio' as const, size: 4 },
+        asset: {
+          id: 'audio:test',
+          name: 'voice.mp3',
+          mimeType: 'audio/mpeg',
+          kind: 'audio' as const,
+          size: 4,
+        },
         url: 'blob:narration',
       })),
       revoke: vi.fn(),
@@ -69,7 +80,9 @@ describe('SessionPlayer', () => {
     block.audioSettings.narrationReference = 'audio:test';
     session.blocks = [block];
     let state = '';
-    player.subscribe((snapshot) => { state = snapshot.state; });
+    player.subscribe((snapshot) => {
+      state = snapshot.state;
+    });
     player.prepare(session);
     const running = player.start();
     await vi.waitFor(() => expect(mix.playToEnd).toHaveBeenCalledOnce());
