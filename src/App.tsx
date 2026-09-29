@@ -26,6 +26,7 @@ import { SessionReview } from './components/SessionReview';
 import { GroundingMode } from './components/GroundingMode';
 import { AudioPanel } from './components/AudioPanel';
 import { VisualPanel } from './components/VisualPanel';
+import { PlayerView } from './components/PlayerView';
 import { invalidateReview, scanSession } from './safety/reviewEngine';
 import { RETURN_NOW_EVENT, returnNow } from './safety/returnNow';
 import {
@@ -39,6 +40,7 @@ type View =
   | 'New Session'
   | 'Session Editor'
   | 'Session Review'
+  | 'Player'
   | 'Calm / Grounding'
   | 'Settings'
   | 'About / Safety';
@@ -289,14 +291,14 @@ export function App({
         </nav>
         <div className="sidebar-foot">
           <span className="dot" /> Local & private
-          <p>Audio Engine · Milestone 4</p>
+          <p>Renderer & Player · Milestone 6</p>
         </div>
       </aside>
       <main aria-busy={busy}>
         <header>
           <p className="eyebrow">YOUR SPACE. YOUR CONTROL.</p>
           <div className="header-actions">
-            <span className="badge">AUDIO ENGINE / 04</span>
+            <span className="badge">BETA PLAYER / 06</span>
             <button
               type="button"
               className="return-now"
@@ -348,8 +350,7 @@ export function App({
               <section>
                 <h2>Foundation only</h2>
                 <p>
-                  Local narration and layered audio preview are available.
-                  Visual and final video rendering come later.
+                  Script, review, audio, visuals, and the immersive player are local and offline-capable. Rendered video export remains capability-dependent.
                 </p>
                 <button
                   onClick={() => navigate('About / Safety')}
@@ -683,6 +684,11 @@ export function App({
             />
             <AudioPanel session={session} onChange={edit} />
             <VisualPanel session={session} onChange={edit} />
+            <section className="player-launch">
+              <h2>Immersive player</h2>
+              <p>Review the session, then start playback explicitly. Nothing starts automatically.</p>
+              <button className="primary" type="button" onClick={() => setView('Player')}>Open player</button>
+            </section>
             <details className="metadata">
               <summary>Session metadata</summary>
               <dl>
@@ -699,6 +705,9 @@ export function App({
               </dl>
             </details>
           </>
+        )}
+        {view === 'Player' && session && (
+          <PlayerView session={session} onExit={() => setView('Session Editor')} />
         )}
         {view === 'Session Review' && session && (
           <SessionReview

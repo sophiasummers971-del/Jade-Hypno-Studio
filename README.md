@@ -117,3 +117,7 @@ No safety scanner, automatic content blocking, TTS, speech synthesis, audio mixi
 Single-user beta limits remain: 200 blocks / 4 MiB per session, no pagination, no migration engine, no automatic backup/encryption and no Trash UI. Cross-window sessions use optimistic revision conflict checks; settings are last-committed-write-wins across separate windows. Filesystem power-loss durability and IndexedDB quota/eviction behavior remain OS/browser-dependent. Real Android keyboard, Back button, process death, permissions and exported APK behavior must be tested on-device.
 
 The project remains private/local-first. Milestone 2 does not require a backend, localhost process, cloud service or Tauri native filesystem API in production.
+
+## Milestone 6 Beta player
+
+The local immersive player and renderer/export boundary are documented in [`docs/player-renderer.md`](docs/player-renderer.md). Playback remains offline-first for the Android/WebToApp path. Rendered video is capability-dependent; Beta does not promise MP4 or use cloud encoding.
