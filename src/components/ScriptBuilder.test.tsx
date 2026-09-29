@@ -6,9 +6,13 @@ import { defaultSettings, type Session } from '../domain/schema';
 import { createSessionFromTemplate } from '../domain/scriptBuilder';
 import { ScriptBuilder } from './ScriptBuilder';
 
-function Harness({ initial }: { initial: Session }) {
+function Harness({ initial, onSessionChange }: { initial: Session; onSessionChange?: (session: Session) => void }) {
   const [session, setSession] = useState(initial);
-  return <ScriptBuilder session={session} wordsPerMinute={150} onChange={setSession} />;
+  const handleChange = (next: Session) => {
+    setSession(next);
+    onSessionChange?.(next);
+  };
+  return <ScriptBuilder session={session} wordsPerMinute={150} onChange={handleChange} />;
 }
 
 describe('ScriptBuilder editor', () => {
@@ -37,14 +41,24 @@ describe('ScriptBuilder editor', () => {
 
   it('previews local text imports before adding proposed blocks and preserves source', async () => {
     const user = userEvent.setup();
-    render(<Harness initial={createSessionFromTemplate('Import', 'blank', defaultSettings)} />);
-    const file = new File(['# Arrival\nBreathe.\n\n# Return\nAwake.'], 'sample.md', { type: 'text/markdown' });
+    const onSessionChange = vi.fn();
+    render(
+      <Harness
+        initial={createSessionFromTemplate('Import', 'blank', defaultSettings)}
+        onSessionChange={onSessionChange}
+      />,
+    );
+    const originalText = '# Arrival\nBreathe.\n\n# Return\nAwake.';
+    const file = new File([originalText], 'sample.md', { type: 'text/markdown' });
     await user.upload(screen.getByLabelText('Import TXT or Markdown file'), file);
     expect(await screen.findByRole('heading', { name: 'Review imported text' })).toBeInTheDocument();
     expect(screen.queryByDisplayValue('Arrival')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Confirm and add proposed blocks' }));
     expect(screen.getByDisplayValue('Arrival')).toBeInTheDocument();
-    expect(screen.getByText(/Nothing is executable or saved until/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Review imported text' })).not.toBeInTheDocument();
+    const latestSession = onSessionChange.mock.calls.at(-1)?.[0] as Session;
+    expect(latestSession.sourceImports).toHaveLength(1);
+    expect(latestSession.sourceImports[0]).toMatchObject({ fileName: 'sample.md', originalText });
   });
 
   it('requires confirmation before deleting a populated block', async () => {
