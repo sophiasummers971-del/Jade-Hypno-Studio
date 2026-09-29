@@ -45,7 +45,9 @@ export type ExperimentRatings = z.infer<typeof ExperimentRatingsSchema>;
 export type RatingKey = (typeof ratingKeys)[number];
 
 export function emptyRatings(): ExperimentRatings {
-  return Object.fromEntries(ratingKeys.map((key) => [key, null])) as ExperimentRatings;
+  return Object.fromEntries(
+    ratingKeys.map((key) => [key, null]),
+  ) as ExperimentRatings;
 }
 
 export function newExperimentRecord(input: {
@@ -86,13 +88,18 @@ function averages(records: ExperimentRecord[]) {
       .map((record) => record.ratings[key])
       .filter((value): value is number => value !== null);
     if (values.length)
-      result[key] = values.reduce((sum, value) => sum + value, 0) / values.length;
+      result[key] =
+        values.reduce((sum, value) => sum + value, 0) / values.length;
   }
   return result;
 }
 
-export function summarizeExperiments(records: ExperimentRecord[]): ExperimentSummary {
-  const ordered = [...records].sort((a, b) => a.completedAt.localeCompare(b.completedAt));
+export function summarizeExperiments(
+  records: ExperimentRecord[],
+): ExperimentSummary {
+  const ordered = [...records].sort((a, b) =>
+    a.completedAt.localeCompare(b.completedAt),
+  );
   const split = Math.ceil(ordered.length / 2);
   return {
     count: ordered.length,

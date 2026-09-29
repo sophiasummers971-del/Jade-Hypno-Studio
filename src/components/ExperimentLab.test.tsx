@@ -11,12 +11,22 @@ describe('ExperimentLab', () => {
     const repo = memoryRepository();
     const session = newSession('Skip me', defaultSettings);
     const pending = newExperimentRecord({
-      sessionId: session.id, sessionTitle: session.title, sessionRevision: session.updatedAt,
-      completedAt: new Date().toISOString(), durationSeconds: 30,
+      sessionId: session.id,
+      sessionTitle: session.title,
+      sessionRevision: session.updatedAt,
+      completedAt: new Date().toISOString(),
+      durationSeconds: 30,
     });
     const handled = vi.fn();
     const user = userEvent.setup();
-    render(<ExperimentLab repo={repo} sessions={{ sessions: [session], issues: [] }} pending={pending} onPendingHandled={handled} />);
+    render(
+      <ExperimentLab
+        repo={repo}
+        sessions={{ sessions: [session], issues: [] }}
+        pending={pending}
+        onPendingHandled={handled}
+      />,
+    );
     await user.click(screen.getByRole('button', { name: 'Skip / cancel' }));
     expect(await repo.listExperiments()).toEqual([]);
     expect(handled).toHaveBeenCalledOnce();
@@ -26,12 +36,19 @@ describe('ExperimentLab', () => {
     const repo = memoryRepository();
     const session = newSession('Linked run', defaultSettings);
     const pending = newExperimentRecord({
-      sessionId: session.id, sessionTitle: session.title, sessionRevision: session.updatedAt,
-      completedAt: new Date().toISOString(), durationSeconds: 120,
+      sessionId: session.id,
+      sessionTitle: session.title,
+      sessionRevision: session.updatedAt,
+      completedAt: new Date().toISOString(),
+      durationSeconds: 120,
     });
     const user = userEvent.setup();
     const { rerender } = render(
-      <ExperimentLab repo={repo} sessions={{ sessions: [session], issues: [] }} pending={pending} />,
+      <ExperimentLab
+        repo={repo}
+        sessions={{ sessions: [session], issues: [] }}
+        pending={pending}
+      />,
     );
     await user.selectOptions(screen.getByLabelText(/Comfort:/), '4');
     await user.type(screen.getByLabelText('Notes'), 'Felt steady');
@@ -45,8 +62,12 @@ describe('ExperimentLab', () => {
     await user.click(screen.getByRole('button', { name: 'Save observation' }));
     expect(await screen.findByText('Edited note')).toBeInTheDocument();
 
-    rerender(<ExperimentLab repo={repo} sessions={{ sessions: [], issues: [] }} />);
-    expect(await screen.findByText(/Original session no longer in active library/)).toBeInTheDocument();
+    rerender(
+      <ExperimentLab repo={repo} sessions={{ sessions: [], issues: [] }} />,
+    );
+    expect(
+      await screen.findByText(/Original session no longer in active library/),
+    ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Delete' }));
     expect(await repo.listExperiments()).toEqual([]);
   });
@@ -54,7 +75,9 @@ describe('ExperimentLab', () => {
   it('does not use network APIs to browse history', async () => {
     const repo = memoryRepository();
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
-    render(<ExperimentLab repo={repo} sessions={{ sessions: [], issues: [] }} />);
+    render(
+      <ExperimentLab repo={repo} sessions={{ sessions: [], issues: [] }} />,
+    );
     await screen.findByText('No observations recorded for this filter.');
     expect(fetchSpy).not.toHaveBeenCalled();
     fetchSpy.mockRestore();

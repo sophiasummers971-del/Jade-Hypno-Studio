@@ -20,10 +20,18 @@ describe('experiment model', () => {
   it('calculates descriptive averages and recent-vs-earlier values', () => {
     const session = newSession('A', defaultSettings);
     const first = newExperimentRecord({
-      sessionId: session.id, sessionTitle: session.title, sessionRevision: session.updatedAt,
-      completedAt: '2026-01-01T00:00:00.000Z', durationSeconds: 60,
+      sessionId: session.id,
+      sessionTitle: session.title,
+      sessionRevision: session.updatedAt,
+      completedAt: '2026-01-01T00:00:00.000Z',
+      durationSeconds: 60,
     });
-    const second = { ...first, id: crypto.randomUUID(), completedAt: '2026-01-02T00:00:00.000Z' };
+    const second = {
+      ...first,
+      id: crypto.randomUUID(),
+      completedAt: '2026-01-02T00:00:00.000Z',
+      ratings: { ...first.ratings },
+    };
     first.ratings.relaxation = 2;
     second.ratings.relaxation = 4;
     const summary = summarizeExperiments([second, first]);

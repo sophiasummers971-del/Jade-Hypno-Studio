@@ -11,11 +11,17 @@ const ExportSchema = z
   .strict();
 
 export function exportExperimentsJson(records: ExperimentRecord[]): string {
-  return JSON.stringify(
-    ExportSchema.parse({ schemaVersion: 1, kind: 'jade-experiment-records', records }),
-    null,
-    2,
-  ) + '\n';
+  return (
+    JSON.stringify(
+      ExportSchema.parse({
+        schemaVersion: 1,
+        kind: 'jade-experiment-records',
+        records,
+      }),
+      null,
+      2,
+    ) + '\n'
+  );
 }
 
 export async function importExperimentsJson(

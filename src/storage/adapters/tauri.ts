@@ -2,7 +2,9 @@ import { invoke } from '@tauri-apps/api/core';
 import { SessionSchema, SettingsSchema } from '../../domain/schema';
 import { ListSchema, type Repository } from '../repository';
 import { IndexedDBRepository } from './indexeddb';
-const experimentStorage = new IndexedDBRepository({ name: 'jade-hypno-studio-tauri-experiments' });
+const experimentStorage = new IndexedDBRepository({
+  name: 'jade-hypno-studio-tauri-experiments',
+});
 export const tauriRepository: Repository = {
   async list() {
     return ListSchema.parse(await invoke('list_sessions'));

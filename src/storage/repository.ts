@@ -19,14 +19,18 @@ export interface SessionRepository {
 }
 export interface ExperimentRepository {
   listExperiments(sessionId?: string): Promise<ExperimentRecord[]>;
-  saveExperiment(record: ExperimentRecord, expectedUpdatedAt: string | null): Promise<ExperimentRecord>;
+  saveExperiment(
+    record: ExperimentRecord,
+    expectedUpdatedAt: string | null,
+  ): Promise<ExperimentRecord>;
   deleteExperiment(id: string, expectedUpdatedAt: string): Promise<void>;
 }
 export interface SettingsRepository {
   loadSettings(): Promise<Settings>;
   saveSettings(settings: Settings): Promise<Settings>;
 }
-export interface Repository extends SessionRepository, SettingsRepository, ExperimentRepository {}
+export interface Repository
+  extends SessionRepository, SettingsRepository, ExperimentRepository {}
 
 export async function duplicateSession(
   repo: SessionRepository,

@@ -92,7 +92,10 @@ describe('IndexedDB transaction adapter', () => {
   });
   it('persists, edits, filters and deletes experiment observations independently of session deletion', async () => {
     const { repo, factory, name } = setup();
-    const session = await repo.save(newSession('Repeated run', defaultSettings), null);
+    const session = await repo.save(
+      newSession('Repeated run', defaultSettings),
+      null,
+    );
     const first = newExperimentRecord({
       sessionId: session.id,
       sessionTitle: session.title,
@@ -105,7 +108,11 @@ describe('IndexedDB transaction adapter', () => {
     const reopened = new IndexedDBRepository({ factory, name });
     expect(await reopened.listExperiments(session.id)).toEqual([saved]);
     const edited = await reopened.saveExperiment(
-      { ...saved, notes: 'A local note', ratings: { ...saved.ratings, comfort: 4 } },
+      {
+        ...saved,
+        notes: 'A local note',
+        ratings: { ...saved.ratings, comfort: 4 },
+      },
       saved.updatedAt,
     );
     await reopened.trash(session.id, session.updatedAt);

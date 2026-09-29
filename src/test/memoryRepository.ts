@@ -47,16 +47,23 @@ export function memoryRepository(): Repository {
     async saveExperiment(record, expectedUpdatedAt) {
       const input = ExperimentRecordSchema.parse(record);
       const old = experiments.get(input.id);
-      if ((old && JSON.parse(old).updatedAt !== expectedUpdatedAt) || (!old && expectedUpdatedAt))
+      if (
+        (old && JSON.parse(old).updatedAt !== expectedUpdatedAt) ||
+        (!old && expectedUpdatedAt)
+      )
         throw new Error('Conflict');
       tick = Math.max(Date.now(), tick + 1, Date.parse(input.createdAt));
-      const saved = ExperimentRecordSchema.parse({ ...input, updatedAt: new Date(tick).toISOString() });
+      const saved = ExperimentRecordSchema.parse({
+        ...input,
+        updatedAt: new Date(tick).toISOString(),
+      });
       experiments.set(saved.id, JSON.stringify(saved));
       return saved;
     },
     async deleteExperiment(id, expectedUpdatedAt) {
       const old = experiments.get(id);
-      if (!old || JSON.parse(old).updatedAt !== expectedUpdatedAt) throw new Error('Conflict');
+      if (!old || JSON.parse(old).updatedAt !== expectedUpdatedAt)
+        throw new Error('Conflict');
       experiments.delete(id);
     },
     async loadSettings() {

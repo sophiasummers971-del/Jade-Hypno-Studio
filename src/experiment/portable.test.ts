@@ -9,11 +9,17 @@ describe('experiment portable data', () => {
     const repo = memoryRepository();
     const session = newSession('Portable', defaultSettings);
     const record = newExperimentRecord({
-      sessionId: session.id, sessionTitle: session.title, sessionRevision: session.updatedAt,
-      completedAt: new Date().toISOString(), durationSeconds: 90,
+      sessionId: session.id,
+      sessionTitle: session.title,
+      sessionRevision: session.updatedAt,
+      completedAt: new Date().toISOString(),
+      durationSeconds: 90,
     });
     const fetchBefore = globalThis.fetch;
-    const count = await importExperimentsJson(repo, exportExperimentsJson([record]));
+    const count = await importExperimentsJson(
+      repo,
+      exportExperimentsJson([record]),
+    );
     expect(count).toBe(1);
     expect((await repo.listExperiments())[0]?.sessionId).toBe(session.id);
     expect(globalThis.fetch).toBe(fetchBefore);

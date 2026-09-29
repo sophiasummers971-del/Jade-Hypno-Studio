@@ -7,7 +7,10 @@ import {
   type Settings,
 } from '../../domain/schema';
 import type { Repository, SessionList } from '../repository';
-import { ExperimentRecordSchema, type ExperimentRecord } from '../../experiment/model';
+import {
+  ExperimentRecordSchema,
+  type ExperimentRecord,
+} from '../../experiment/model';
 
 const STORE_VERSION = 2;
 export const DATABASE_NAME = 'jade-hypno-studio';
@@ -308,8 +311,10 @@ export class IndexedDBRepository implements Repository {
             return;
           }
           const record = ExperimentRecordSchema.parse(row.value);
-          if (record.id !== row.key) throw new Error('Experiment ID differs from its storage key.');
-          if (!sessionId || record.sessionId === sessionId) records.push(record);
+          if (record.id !== row.key)
+            throw new Error('Experiment ID differs from its storage key.');
+          if (!sessionId || record.sessionId === sessionId)
+            records.push(record);
           row.continue();
         });
     });
@@ -326,14 +331,17 @@ export class IndexedDBRepository implements Repository {
       request.onsuccess = () =>
         guard(() => {
           if (expectedUpdatedAt === null) {
-            if (request.result !== undefined) throw new Error('Experiment record already exists.');
+            if (request.result !== undefined)
+              throw new Error('Experiment record already exists.');
             store.add(input, input.id);
             done(input);
             return;
           }
           const current = ExperimentRecordSchema.parse(request.result);
           if (current.updatedAt !== expectedUpdatedAt)
-            throw new Error('Observation changed in another window. Refresh before saving.');
+            throw new Error(
+              'Observation changed in another window. Refresh before saving.',
+            );
           if (current.createdAt !== input.createdAt)
             throw new Error('Observation creation timestamp cannot change.');
           const updatedAt = new Date(
@@ -354,7 +362,9 @@ export class IndexedDBRepository implements Repository {
         guard(() => {
           const current = ExperimentRecordSchema.parse(request.result);
           if (current.updatedAt !== expectedUpdatedAt)
-            throw new Error('Observation changed in another window. Refresh before deleting.');
+            throw new Error(
+              'Observation changed in another window. Refresh before deleting.',
+            );
           store.delete(id);
           done(undefined);
         });

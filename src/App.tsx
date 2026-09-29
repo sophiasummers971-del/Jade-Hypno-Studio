@@ -70,7 +70,8 @@ export function App({
     detail: string;
   } | null>(null);
   const [status, setStatus] = useState('');
-  const [pendingExperiment, setPendingExperiment] = useState<ExperimentRecord | null>(null);
+  const [pendingExperiment, setPendingExperiment] =
+    useState<ExperimentRecord | null>(null);
   const [reviewFocusBlockId, setReviewFocusBlockId] = useState<
     string | undefined
   >();
