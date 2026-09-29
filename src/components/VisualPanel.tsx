@@ -27,11 +27,25 @@ export function VisualPanel({ session, onChange }: { session: Session; onChange:
   const video = useRef<HTMLVideoElement>(null);
   const current = session.blocks.find((b) => b.id === snapshot.currentBlockId) ?? session.blocks.find((b) => b.enabled) ?? null;
 
-  useEffect(() => engine.subscribe(setSnapshot), [engine]);
+  useEffect(() => {
+    const unsubscribe = engine.subscribe(setSnapshot);
+    return () => {
+      unsubscribe();
+    };
+  }, [engine]);
   useEffect(() => () => { engine.dispose(); audio.dispose(); resolver.dispose(); }, [engine, audio, resolver]);
   useEffect(() => {
-    const query = matchMedia('(prefers-reduced-motion: reduce)');
-    const sync = () => setReducedMotion(query.matches); sync(); query.addEventListener?.('change', sync); return () => query.removeEventListener?.('change', sync);
+    if (typeof window.matchMedia !== 'function') {
+      setReducedMotion(false);
+      return;
+    }
+    const query = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const sync = () => setReducedMotion(query.matches);
+    sync();
+    query.addEventListener?.('change', sync);
+    return () => {
+      query.removeEventListener?.('change', sync);
+    };
   }, []);
   useEffect(() => { engine.attachVideo(video.current); }, [engine, media, current?.id]);
   useEffect(() => {
