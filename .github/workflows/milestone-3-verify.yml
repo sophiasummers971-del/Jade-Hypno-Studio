@@ -32,7 +32,6 @@ jobs:
       - run: npm run test:e2e
       - name: Create and verify Milestone 3 bundle
         run: |
-          git branch -f codex/milestone-3-safety-review HEAD
           git bundle create jade-hypno-studio-m3.bundle codex/milestone-3-safety-review
           git bundle verify jade-hypno-studio-m3.bundle
       - uses: actions/upload-artifact@v4
