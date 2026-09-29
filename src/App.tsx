@@ -22,6 +22,10 @@ import { Autosave, type SaveState } from './storage/autosave';
 import { ErrorNotice, errorDetail } from './components/ErrorNotice';
 import { Modal } from './components/Modal';
 import { ScriptBuilder } from './components/ScriptBuilder';
+import { SessionReview } from './components/SessionReview';
+import { GroundingMode } from './components/GroundingMode';
+import { invalidateReview, scanSession } from './safety/reviewEngine';
+import { RETURN_NOW_EVENT, returnNow } from './safety/returnNow';
 import {
   createSessionFromTemplate,
   type TemplateId,
@@ -32,6 +36,8 @@ type View =
   | 'Sessions'
   | 'New Session'
   | 'Session Editor'
+  | 'Session Review'
+  | 'Calm / Grounding'
   | 'Settings'
   | 'About / Safety';
 const emptyList: SessionList = { sessions: [], issues: [] };
@@ -57,6 +63,7 @@ export function App({
     detail: string;
   } | null>(null);
   const [status, setStatus] = useState('');
+  const [reviewFocusBlockId, setReviewFocusBlockId] = useState<string | undefined>();
   const [action, setAction] = useState<{
     type: 'rename' | 'delete' | 'reopen';
     session: Session;
@@ -103,6 +110,16 @@ export function App({
     };
   }, [repo, report]);
   useEffect(() => () => writer.current?.dispose(), []);
+  useEffect(() => {
+    const restoreOrdinaryInterface = () => {
+      setView('Home');
+      setReviewFocusBlockId(undefined);
+      setStatus('Session stopped. Ordinary interface restored.');
+    };
+    window.addEventListener(RETURN_NOW_EVENT, restoreOrdinaryInterface);
+    return () =>
+      window.removeEventListener(RETURN_NOW_EVENT, restoreOrdinaryInterface);
+  }, []);
   const flushSettings = useCallback(async () => {
     if (settingsFlight.current) return settingsFlight.current;
     settingsFlight.current = (async () => {
@@ -218,8 +235,12 @@ export function App({
     setError(null);
   }
   function edit(next: Session) {
-    setSession(next);
-    writer.current?.edit(next);
+    const prepared =
+      session && next.blocks !== session.blocks
+        ? { ...next, safetyReview: invalidateReview(next.safetyReview) }
+        : next;
+    setSession(prepared);
+    writer.current?.edit(prepared);
   }
   function navigate(next: View) {
     void run(async () => {
@@ -264,13 +285,22 @@ export function App({
         </nav>
         <div className="sidebar-foot">
           <span className="dot" /> Local & private
-          <p>Script Builder · Milestone 2</p>
+          <p>Safety & Review · Milestone 3</p>
         </div>
       </aside>
       <main aria-busy={busy}>
         <header>
           <p className="eyebrow">YOUR SPACE. YOUR CONTROL.</p>
-          <span className="badge">SCRIPT BUILDER / 02</span>
+          <div className="header-actions">
+            <span className="badge">SAFETY REVIEW / 03</span>
+            <button
+              type="button"
+              className="return-now"
+              onClick={() => void returnNow()}
+            >
+              RETURN NOW
+            </button>
+          </div>
         </header>
         {!ready && <p role="status">Opening local workspace…</p>}
         {error && <ErrorNotice {...error} dismiss={() => setError(null)} />}
@@ -626,12 +656,26 @@ export function App({
                 >
                   Reopen saved version
                 </button>
+                <button
+                  className="primary"
+                  type="button"
+                  onClick={() => {
+                    edit({
+                      ...session,
+                      safetyReview: scanSession(session, session.safetyReview),
+                    });
+                    setView('Session Review');
+                  }}
+                >
+                  Review session
+                </button>
               </div>
             </fieldset>
             <ScriptBuilder
               session={session}
               wordsPerMinute={settings?.wordsPerMinute ?? 150}
               onChange={edit}
+              focusBlockId={reviewFocusBlockId}
             />
             <details className="metadata">
               <summary>Session metadata</summary>
@@ -649,6 +693,21 @@ export function App({
               </dl>
             </details>
           </>
+        )}
+        {view === 'Session Review' && session && (
+          <SessionReview
+            session={session}
+            onChange={edit}
+            onReturnEditor={() => setView('Session Editor')}
+            onJumpToBlock={(blockId) => {
+              setReviewFocusBlockId(blockId);
+              setView('Session Editor');
+            }}
+            onGrounding={() => setView('Calm / Grounding')}
+          />
+        )}
+        {view === 'Calm / Grounding' && (
+          <GroundingMode onReturn={() => setView('Home')} />
         )}
         {view === 'Settings' && (
           <>
@@ -834,9 +893,9 @@ export function App({
                 therapy service.
               </p>
               <p>
-                This build only manages session structure and local data. It
-                does not play hypnosis, generate scripts, connect to AI or voice
-                services, or influence anyone.
+                This build adds a local, rules-based pre-render review layer to
+                session structure and local data. It does not play hypnosis,
+                generate scripts, connect to AI or voice services, or render media.
               </p>
             </section>
             <section>
@@ -851,6 +910,15 @@ export function App({
                 Deletion retains the original in local Trash. Export sessions as
                 JSON backups. Clearing app/browser data or uninstalling can
                 remove sessions, settings and Trash.
+              </p>
+            </section>
+            <section>
+              <h2>Review is not a guarantee</h2>
+              <p>
+                Scanner matches can miss context or create false positives. They
+                are prompts for adult review, not diagnosis, therapy, censorship,
+                or a guarantee of psychological safety. The scanner never sends
+                scripts off-device and never silently rewrites them.
               </p>
             </section>
             <section>
