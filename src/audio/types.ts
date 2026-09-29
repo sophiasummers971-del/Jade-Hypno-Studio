@@ -14,7 +14,7 @@ export type SpeechSettings = {
 };
 export type NarrationPart =
   { type: 'speech'; text: string } | { type: 'pause'; seconds: number };
-export type AudioTrackKind = 'music' | 'ambient' | 'effects';
+export type AudioTrackKind = 'narration' | 'music' | 'ambient' | 'effects';
 export type LocalAudioTrack = {
   id: string;
   kind: AudioTrackKind;
