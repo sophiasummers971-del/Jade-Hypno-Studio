@@ -1,0 +1,37 @@
+name: Milestone 4 verification
+on:
+  push:
+    branches:
+      - codex/milestone-4-audio-engine
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run test
+      - run: npm run format:check
+      - run: npm run schema:check
+      - run: npm run build
+      - run: npm run check:dist
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - name: Create and verify Milestone 4 bundle
+        run: |
+          git bundle create jade-hypno-studio-m4.bundle codex/milestone-4-audio-engine
+          git bundle verify jade-hypno-studio-m4.bundle
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jade-hypno-studio-m4-bundle
+          path: jade-hypno-studio-m4.bundle
+          if-no-files-found: error
