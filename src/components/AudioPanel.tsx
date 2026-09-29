@@ -10,7 +10,9 @@ import type { AudioEngineSnapshot, AudioTrackKind, SpeechVoice } from '../audio/
 const initial: AudioEngineSnapshot = { state: 'idle', currentBlockId: null, elapsedSeconds: 0, error: null };
 const accept = 'audio/mpeg,audio/wav,audio/ogg,audio/mp4,audio/aac,.mp3,.wav,.ogg,.m4a,.aac';
 
-export function AudioPanel({ session, activeBlock, onChange }: { session: Session; activeBlock: SessionBlock | null; onChange: (session: Session) => void }) {
+export function AudioPanel({ session, onChange }: { session: Session; onChange: (session: Session) => void }) {
+  const [activeBlockId, setActiveBlockId] = useState(session.blocks[0]?.id ?? '');
+  const activeBlock = session.blocks.find((block) => block.id === activeBlockId) ?? session.blocks[0] ?? null;
   const engine = useMemo(() => new AudioEngine(new BrowserSpeechEngine(), new AudioMixer()), []);
   const [playback, setPlayback] = useState(initial);
   const [voices, setVoices] = useState<SpeechVoice[]>([]);
@@ -60,6 +62,11 @@ export function AudioPanel({ session, activeBlock, onChange }: { session: Sessio
     <div className="audio-grid">
       <section>
         <h3>Narration</h3>
+        <label>Preview block
+          <select value={activeBlock?.id ?? ''} onChange={(e) => setActiveBlockId(e.target.value)}>
+            {session.blocks.map((block) => <option key={block.id} value={block.id}>{block.enabled ? '' : 'Disabled · '}{block.title || block.type}</option>)}
+          </select>
+        </label>
         <label>Voice
           <select disabled={!activeBlock || !speechSupported} value={selectedVoiceMissing ? '' : activeBlock?.voiceSettings.voiceId ?? ''} onChange={(e) => setVoice('voiceId', e.target.value)}>
             <option value="">Device default</option>
