@@ -25,7 +25,7 @@ export default defineConfig(({ mode, command }) => ({
           return html
             .replace(
               '<head>',
-              `<head><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">`,
+              `<head><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; media-src 'self' blob: data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">`,
             )
             .replace(/type="module"/g, 'defer')
             .replace(/ crossorigin/g, '');
