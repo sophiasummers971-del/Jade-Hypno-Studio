@@ -224,6 +224,12 @@
                 "minimum": 0,
                 "maximum": 1
               },
+              "effectsLevel": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "default": 0.3
+              },
               "fadeInDuration": {
                 "type": "number",
                 "minimum": 0,
@@ -235,12 +241,6 @@
                 "minimum": 0,
                 "maximum": 300,
                 "default": 0
-              },
-              "effectsLevel": {
-                "type": "number",
-                "minimum": 0,
-                "maximum": 1,
-                "default": 0.3
               }
             },
             "required": [
@@ -410,6 +410,12 @@
           "minimum": 0,
           "maximum": 1
         },
+        "effectsLevel": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.3
+        },
         "fadeInDuration": {
           "type": "number",
           "minimum": 0,
@@ -421,12 +427,6 @@
           "minimum": 0,
           "maximum": 300,
           "default": 0
-        },
-        "effectsLevel": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1,
-          "default": 0.3
         }
       },
       "required": [
