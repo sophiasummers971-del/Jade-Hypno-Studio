@@ -36,7 +36,7 @@ export function AudioPanel({ session, onChange }: { session: Session; onChange: 
     if (!activeBlock) return;
     patchBlock({ voiceSettings: { ...activeBlock.voiceSettings, [key]: value } });
   };
-  const setSessionLevel = (key: 'narrationLevel' | 'musicLevel' | 'ambientLevel', value: number) =>
+  const setSessionLevel = (key: 'narrationLevel' | 'musicLevel' | 'ambientLevel' | 'effectsLevel', value: number) =>
     onChange({ ...session, audioSettings: { ...session.audioSettings, [key]: value } });
 
   const importTrack = (kind: AudioTrackKind, file: File) => {
@@ -88,8 +88,8 @@ export function AudioPanel({ session, onChange }: { session: Session; onChange: 
 
       <section>
         <h3>Mix</h3>
-        {(['narrationLevel','musicLevel','ambientLevel'] as const).map((key) => <label key={key}>{key.replace('Level','')}: {Math.round(session.audioSettings[key] * 100)}%<input type="range" min="0" max="1" step=".01" value={session.audioSettings[key]} onChange={(e) => setSessionLevel(key, Number(e.target.value))}/></label>)}
-        <p className="hint">Effects use a non-destructive 30% preview default. User media is never normalized or uploaded.</p>
+        {(['narrationLevel','musicLevel','ambientLevel','effectsLevel'] as const).map((key) => <label key={key}>{key.replace('Level','')}: {Math.round(session.audioSettings[key] * 100)}%<input type="range" min="0" max="1" step=".01" value={session.audioSettings[key]} onChange={(e) => setSessionLevel(key, Number(e.target.value))}/></label>)}
+        <p className="hint">Mixing is non-destructive. User media is never normalized or uploaded.</p>
         {(['music','ambient','effects'] as AudioTrackKind[]).map((kind) => <div className="media-row" key={kind}>
           <input ref={(el) => { inputs.current[kind] = el; }} className="sr-only" type="file" accept={accept} onChange={(e) => { const file=e.target.files?.[0]; e.target.value=''; if(file) importTrack(kind,file); }}/>
           <button onClick={() => inputs.current[kind]?.click()}>Choose {kind}</button>
